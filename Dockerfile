@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine as builder
+FROM golang:1.21 as builder
 
 WORKDIR /app
 
@@ -7,6 +7,9 @@ RUN go mod download
 
 COPY ./internal ./internal
 COPY ./cmd ./cmd
+
+ENV  GOOS linux
+ENV GOARCH amd64
 
 RUN go build -v -o ./bin/rinha ./cmd/rinha.go
 
