@@ -47,28 +47,4 @@ export default function () {
   check(res1, {
     "status is 201": (r) => r.status === 201,
   });
-
-  // // sleep(1);
-
-  // const location = res1.headers["Location"];
-
-  // let res2 = http.get(`${baseUrl}${location}`, {
-  //   verb: "get",
-  //   tags: { name: "get_person" },
-  // });
-
-  // check(res2, {
-  //   "status is 200": (r) => r.status === 200,
-  // });
-
-  // // sleep(1);
-
-  // let res3 = http.get(encodeURI(`${baseUrl}/pessoas?t=${makeTerm()}`), {
-  //   verb: "get",
-  //   tags: { name: "search_person" },
-  // });
-
-  // check(res3, {
-  //   "status is 200": (r) => r.status === 200,
-  // });
 }
