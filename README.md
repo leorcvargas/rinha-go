@@ -5,8 +5,8 @@ Repositório da competição [aqui](https://github.com/zanfranceschi/rinha-de-ba
 
 ## Tech
 - Go 1.21
-- Gin (HTTP framework)
-- Fx (DI framework)
+- [Gin](https://github.com/gin-gonic/gin) (HTTP framework)
+- [Fx](https://github.com/uber-go/fx) (DI framework)
 - Postgres
 - Nginx
 
