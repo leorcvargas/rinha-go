@@ -2,9 +2,7 @@ package peopledb
 
 import (
 	"database/sql"
-	"log"
 	"strings"
-	"time"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/lib/pq"
@@ -16,18 +14,7 @@ type PersonRepository struct {
 	cache *PeopleDbCache
 }
 
-func countOpTime(label string) func() {
-	start := time.Now()
-
-	return func() {
-		elapsed := time.Since(start)
-		log.Printf(">>> %s end %s", label, elapsed)
-	}
-}
-
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	x := countOpTime("create-person-repo")
-	defer x()
 	strStack := strings.Join(person.Stack, ",")
 	_, err := p.db.Exec(
 		"INSERT INTO people (id, nickname, name, birthdate, stack) VALUES ($1, $2, $3, $4, $5)",
@@ -51,9 +38,7 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
-	x1 := countOpTime("redis-get-person")
 	cachedPerson, err := p.cache.Get(id)
-	x1()
 
 	if err != nil && err != redis.Nil {
 		return nil, err
@@ -63,8 +48,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 		return cachedPerson, nil
 	}
 
-	x2 := countOpTime("find-by-id-person")
-	defer x2()
 	var person people.Person
 	var strStack string
 
@@ -92,8 +75,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]*people.Person, error) {
-	x := countOpTime("search-person")
-	defer x()
 	rows, err := p.db.Query(
 		`SELECT id, nickname, name, birthdate, stack FROM people p
 		WHERE p.fts_q @@ websearch_to_tsquery('english', $1)

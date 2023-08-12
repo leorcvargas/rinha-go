@@ -7,8 +7,6 @@ RUN go mod download
 
 COPY . ./
 
-# ENV GOEXPERIMENT arenas
-
 RUN go build -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM alpine:3.18.2

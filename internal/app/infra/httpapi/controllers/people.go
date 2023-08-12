@@ -12,8 +12,6 @@ import (
 
 var InvalidDtoErr = errors.New("invalid dto")
 
-// var v = validator.New()
-
 type CreatePersonRequest struct {
 	Nickname  string   `json:"apelido" validate:"required,max=32"`
 	Name      string   `json:"nome" validate:"required,max=100"`
