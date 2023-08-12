@@ -14,7 +14,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.6"
+          cpus: "1"
           memory: "1GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
@@ -25,7 +25,7 @@ services:
       timeout: 5s
 
   api1:
-    build: .
+    image: leorcvargas/rinha-go
     restart: always
     hostname: api1
     depends_on:
@@ -36,11 +36,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.1"
           memory: "0.5GB"
 
   api2:
-    build: .
+    image: leorcvargas/rinha-go
     restart: always
     hostname: api2
     depends_on:
@@ -51,7 +51,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.1"
           memory: "0.5GB"
 
   nginx:
@@ -78,7 +78,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.35"
+          cpus: "0.15"
           memory: "0.5GB"
 
 volumes:

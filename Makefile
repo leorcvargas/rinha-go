@@ -10,8 +10,11 @@ deps:
 clean:
 	rm -rf ./bin
 
+docker:
+	docker build -t leorcvargas/rinha-go .
+
 docker-down:
 	docker-compose down -v --remove-orphans
 
-docker-up: docker-down
+docker-up: docker docker-down
 	docker-compose up --build

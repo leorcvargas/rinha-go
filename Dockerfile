@@ -5,7 +5,8 @@ WORKDIR /app
 COPY go.* ./
 RUN go mod download
 
-COPY . ./
+COPY ./internal ./internal
+COPY ./cmd ./cmd
 
 RUN go build -v -o ./bin/rinha ./cmd/rinha.go
 

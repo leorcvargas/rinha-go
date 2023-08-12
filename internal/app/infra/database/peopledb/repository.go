@@ -2,7 +2,9 @@ package peopledb
 
 import (
 	"database/sql"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/lib/pq"
@@ -74,19 +76,16 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
-func (p *PersonRepository) Search(term string) ([]*people.Person, error) {
-	rows, err := p.db.Query(
-		`SELECT id, nickname, name, birthdate, stack FROM people p
-		WHERE p.fts_q @@ websearch_to_tsquery('english', $1)
-		LIMIT 50;`,
-		term,
-	)
-	if err != nil {
-		return nil, err
+func countOpTime(label string) func() {
+	start := time.Now()
+
+	return func() {
+		elapsed := time.Since(start)
+		log.Printf(">>> %s end %s", label, elapsed)
 	}
+}
 
-	defer rows.Close()
-
+func (p *PersonRepository) mapSearchResult(rows *sql.Rows) ([]*people.Person, error) {
 	result := make([]*people.Person, 0)
 	for rows.Next() {
 		var person people.Person
@@ -105,6 +104,48 @@ func (p *PersonRepository) Search(term string) ([]*people.Person, error) {
 		}
 
 		result = append(result, &person)
+	}
+
+	return result, nil
+}
+
+func (p *PersonRepository) Search(term string) ([]*people.Person, error) {
+	x := countOpTime("search-op")
+	defer x()
+	rows, err := p.db.Query(
+		`SELECT id, nickname, name, birthdate, stack FROM people p
+		WHERE p.fts_q @@ plainto_tsquery('people_terms', $1)
+		LIMIT 50;`,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result, err := p.mapSearchResult(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	log.Printf("no results, falling back to trigram search: %s", term)
+	rows, err = p.db.Query(
+		`SELECT id, nickname, name, birthdate, stack FROM people p
+		WHERE p.trgm_q ILIKE '%' || $1 || '%'
+		`,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err = p.mapSearchResult(rows)
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
