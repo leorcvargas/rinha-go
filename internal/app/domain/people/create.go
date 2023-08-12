@@ -1,13 +1,25 @@
 package people
 
-type CreatePeople struct {
+type CreatePerson struct {
 	repository Repository
 }
 
-func (c *CreatePeople) Execute(person *Person) (*Person, error) {
-	return c.repository.Create(person)
+func (c *CreatePerson) Execute(
+	Nickname string,
+	Name string,
+	Birthdate string,
+	Stack []string,
+) (*Person, error) {
+	person := NewPerson(Nickname, Name, Birthdate, Stack)
+
+	_, err := c.repository.Create(person)
+	if err != nil {
+		return nil, err
+	}
+
+	return person, nil
 }
 
-func NewCreatePeople(repository Repository) *CreatePeople {
-	return &CreatePeople{repository: repository}
+func NewCreatePerson(repository Repository) *CreatePerson {
+	return &CreatePerson{repository: repository}
 }

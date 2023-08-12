@@ -6,6 +6,8 @@ import (
 )
 
 var Module = fx.Options(
-	fx.Provide(NewPostgresDatabase),
+	fx.Provide(
+		NewPostgresDatabase,
+	),
 	peopledb.Module,
 )

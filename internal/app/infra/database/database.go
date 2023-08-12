@@ -1,22 +1,36 @@
 package database
 
 import (
+	"database/sql"
 	"log"
+	"sync"
 
-	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	_ "github.com/lib/pq"
 )
 
-func NewPostgresDatabase() *gorm.DB {
-	dsn := "host=db user=postgres password=postgres dbname=rinha port=5432"
+var (
+	db   *sql.DB
+	once sync.Once
+)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
+func NewPostgresDatabase() *sql.DB {
+	once.Do(func() {
+		dsn := "host=db user=postgres password=postgres dbname=rinha port=5432 sslmode=disable"
 
-	db.AutoMigrate(&peopledb.PersonModel{})
+		pg, err := sql.Open("postgres", dsn)
+		if err != nil {
+			log.Fatalf("failed to connect to database: %v", err)
+		}
+
+		pg.SetMaxOpenConns(20)
+		pg.SetMaxIdleConns(20)
+
+		if err := pg.Ping(); err != nil {
+			log.Fatalf("failed to connect to database: %v", err)
+		}
+
+		db = pg
+	})
 
 	return db
 }

@@ -4,8 +4,6 @@ import (
 	"go.uber.org/fx"
 )
 
-var Module = fx.Options(
-	fx.Provide(
-		NewServer,
-	),
+var Module = fx.Provide(
+	NewServer,
 )

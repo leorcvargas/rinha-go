@@ -9,3 +9,9 @@ deps:
 
 clean:
 	rm -rf ./bin
+
+docker-down:
+	docker-compose down -v --remove-orphans
+
+docker-up: docker-down
+	docker-compose up --build

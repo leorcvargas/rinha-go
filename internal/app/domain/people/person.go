@@ -1,15 +1,17 @@
 package people
 
+import "github.com/google/uuid"
+
 type Person struct {
-	ID        string   `json:"id"`
-	Nickname  string   `json:"apelido"`
-	Name      string   `json:"nome"`
-	Birthdate string   `json:"nascimento"`
-	Stack     []string `json:"stack"`
+	ID        uuid.UUID
+	Nickname  string
+	Name      string
+	Birthdate string
+	Stack     []string
 }
 
 func BuildPerson(
-	id string,
+	id uuid.UUID,
 	nickname string,
 	name string,
 	birthdate string,
@@ -31,6 +33,7 @@ func NewPerson(
 	stack []string,
 ) *Person {
 	return &Person{
+		ID:        uuid.New(),
 		Nickname:  nickname,
 		Name:      name,
 		Birthdate: birthdate,

@@ -2,23 +2,33 @@ package httpapi
 
 import (
 	"context"
+	"database/sql"
+	"log"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
-	"gorm.io/gorm"
 )
 
-func NewServer(lifecycle fx.Lifecycle, router *echo.Echo, _ *gorm.DB) *http.Server {
+func NewServer(lifecycle fx.Lifecycle, router *gin.Engine, _ *sql.DB) *http.Server {
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			go router.Start(":8080")
+			go func() {
+				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					log.Fatalf("error starting the server: %s\n", err)
+				}
+			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			return router.Shutdown(ctx)
+			return srv.Shutdown(ctx)
 		},
 	})
 
-	return router.Server
+	return srv
 }

@@ -6,6 +6,8 @@ import (
 )
 
 var Module = fx.Provide(
+	NewPeopleDbCache,
+	runInsertListener,
 	fx.Annotate(
 		NewPersonRepository,
 		fx.As(new(people.Repository)),

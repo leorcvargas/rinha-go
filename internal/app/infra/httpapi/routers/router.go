@@ -1,25 +1,29 @@
 package routers
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type Router interface {
 	Load()
 }
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
+}
+
 func MakeRouter(
 	peopleRouter *PeopleRouter,
-) *echo.Echo {
-	router := echo.New()
+) *gin.Engine {
+	r := gin.New()
+	r.Use(gin.Recovery())
 
-	router.Pre(middleware.RemoveTrailingSlash())
-	router.Use(middleware.Secure())
-	router.Use(middleware.Logger())
-	router.Use(middleware.Recover())
+	peopleRouter.Load(r)
 
-	peopleRouter.Load(router)
-
-	return router
+	return r
 }
