@@ -113,7 +113,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
 
 	err := p.db.QueryRow(
-		"SELECT COUNT(*) FROM people",
+		CountPeopleQuery,
 	).Scan(&total)
 	if err != nil {
 		return 0, err
