@@ -10,11 +10,9 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v2
-      - name: install buildx
+      - name: setup buildx
         id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
-        with:
-          version: latest
+        uses: docker/setup-buildx-action@v2
       - name: login to docker hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
       - name: build the image
