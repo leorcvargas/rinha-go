@@ -5,17 +5,16 @@ WORKDIR /app
 COPY go.* ./
 RUN go mod download
 
-COPY ./internal ./internal
-COPY ./cmd ./cmd
+COPY . /app/
 
-RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -v -o ./bin/rinha ./cmd/rinha.go
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -v -o /app/bin/rinha /app/cmd/rinha.go
 
 FROM alpine:latest
 
-COPY --from=builder /app/bin/rinha /app/rinha
+COPY --from=builder /app/bin/rinha /app/bin/rinha
 
 ENV GIN_MODE release
 
 EXPOSE 8080
 
-CMD ["/app/rinha"]
+CMD ["/app/bin/rinha"]
