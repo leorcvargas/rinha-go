@@ -13,7 +13,7 @@ func (f *FindPeople) ByID(id string) (*Person, error) {
 	return person, nil
 }
 
-func (f *FindPeople) Search(term string) ([]*Person, error) {
+func (f *FindPeople) Search(term string) ([]Person, error) {
 	people, err := f.repository.Search(term)
 	if err != nil {
 		return nil, err

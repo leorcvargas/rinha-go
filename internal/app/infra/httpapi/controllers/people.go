@@ -82,7 +82,7 @@ func (p *PeopleController) Search(c *gin.Context) {
 
 	response := make([]PersonResponse, 0, len(people))
 	for _, person := range people {
-		response = append(response, mapPersonResponse(person))
+		response = append(response, mapPersonResponse(&person))
 	}
 
 	c.JSON(http.StatusOK, response)

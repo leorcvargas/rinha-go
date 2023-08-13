@@ -17,7 +17,7 @@ type PersonRepository struct {
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
 	strStack := strings.Join(person.Stack, ",")
 	_, err := p.db.Exec(
-		"INSERT INTO people (id, nickname, name, birthdate, stack) VALUES ($1, $2, $3, $4, $5)",
+		InsertPersonQuery,
 		person.ID,
 		person.Nickname,
 		person.Name,
@@ -52,7 +52,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	var strStack string
 
 	err = p.db.QueryRow(
-		"SELECT id, nickname, name, birthdate, stack FROM people WHERE id = $1",
+		SelectPersonByIDQuery,
 		id,
 	).Scan(
 		&person.ID,
@@ -74,35 +74,9 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
-func (p *PersonRepository) mapSearchResult(rows *sql.Rows) ([]*people.Person, error) {
-	result := make([]*people.Person, 0)
-	for rows.Next() {
-		var person people.Person
-		var strStack string
-
-		err := rows.Scan(
-			&person.ID,
-			&person.Nickname,
-			&person.Name,
-			&person.Birthdate,
-			&strStack,
-		)
-		person.Stack = strings.Split(strStack, ",")
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, &person)
-	}
-
-	return result, nil
-}
-
-func (p *PersonRepository) Search(term string) ([]*people.Person, error) {
+func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	rows, err := p.db.Query(
-		`SELECT id, nickname, name, birthdate, stack FROM people p
-		WHERE p.fts_q @@ plainto_tsquery('people_terms', $1)
-		LIMIT 50;`,
+		SearchPeopleFtsQuery,
 		term,
 	)
 	if err != nil {
@@ -120,9 +94,7 @@ func (p *PersonRepository) Search(term string) ([]*people.Person, error) {
 	}
 
 	rows, err = p.db.Query(
-		`SELECT id, nickname, name, birthdate, stack FROM people p
-		WHERE p.trgm_q ILIKE '%' || $1 || '%'
-		`,
+		SearchPeopleTrgmQuery,
 		term,
 	)
 	if err != nil {
@@ -148,6 +120,30 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	}
 
 	return total, nil
+}
+
+func (p *PersonRepository) mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
+	result := make([]people.Person, 0)
+	for rows.Next() {
+		var person people.Person
+		var strStack string
+
+		err := rows.Scan(
+			&person.ID,
+			&person.Nickname,
+			&person.Name,
+			&person.Birthdate,
+			&strStack,
+		)
+		person.Stack = strings.Split(strStack, ",")
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, person)
+	}
+
+	return result, nil
 }
 
 func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
