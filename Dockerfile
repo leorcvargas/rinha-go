@@ -8,12 +8,9 @@ RUN go mod download
 COPY ./internal ./internal
 COPY ./cmd ./cmd
 
-ENV  GOOS linux
-ENV GOARCH amd64
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -v -o ./bin/rinha ./cmd/rinha.go
 
-RUN go build -v -o ./bin/rinha ./cmd/rinha.go
-
-FROM alpine:3.18.2
+FROM alpine:latest
 
 COPY --from=builder /app/bin/rinha /app/rinha
 
