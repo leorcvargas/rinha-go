@@ -1,6 +1,8 @@
 module github.com/leorcvargas/rinha-2023-q3
 
-go 1.20
+go 1.21
+
+toolchain go1.21.0
 
 require (
 	github.com/gin-gonic/gin v1.9.1
