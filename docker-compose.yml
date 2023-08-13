@@ -85,3 +85,7 @@ services:
 
 volumes:
   postgres-db:
+
+networks:
+  default:
+    driver: bridge
