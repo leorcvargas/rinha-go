@@ -2,7 +2,10 @@ FROM golang:1.21 as builder
 
 WORKDIR /app
 
+ENV CGO_ENABLED 0
+
 COPY go.* ./
+
 RUN go mod download
 
 COPY . .
