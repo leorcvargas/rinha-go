@@ -58,31 +58,18 @@ func insertBatch(batch []people.Person, db *sql.DB) {
 			continue
 		}
 
-		valuesStrCh := make(chan []string)
-		valuesArgCh := make(chan []interface{})
-
-		go func() {
-			defer close(valuesStrCh)
-			valuesStrCh <- append(
-				valueStrings,
-				fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5),
-			)
-		}()
-
-		go func() {
-			defer close(valuesArgCh)
-			valuesArgCh <- append(
-				valueArgs,
-				person.ID,
-				person.Nickname,
-				person.Name,
-				person.Birthdate,
-				strings.Join(person.Stack, ","),
-			)
-		}()
-
-		valueStrings = <-valuesStrCh
-		valueArgs = <-valuesArgCh
+		valueStrings = append(
+			valueStrings,
+			fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5),
+		)
+		valueArgs = append(
+			valueArgs,
+			person.ID,
+			person.Nickname,
+			person.Name,
+			person.Birthdate,
+			strings.Join(person.Stack, ","),
+		)
 	}
 
 	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
