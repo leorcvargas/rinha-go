@@ -12,7 +12,7 @@ RUN CGO_ENABLED=1 go build -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM debian:buster-slim
 RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  ca-certificates && \
+  ca-certificates build-essential && \
   rm -rf /var/lib/apt/lists/*
 
 ENV GIN_MODE release
