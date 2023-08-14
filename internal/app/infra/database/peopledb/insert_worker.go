@@ -3,7 +3,6 @@ package peopledb
 import (
 	"arena"
 	"database/sql"
-	"log"
 	"strings"
 	"time"
 
@@ -48,33 +47,49 @@ func Worker(insertChan chan people.Person, db *sql.DB) {
 }
 
 func insertBatch(batch []people.Person, db *sql.DB) {
-	tx, err := db.Begin()
-	if err != nil {
-		panic(err)
-	}
+	bulkInsert := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
 
-	stmt, err := tx.Prepare(InsertPersonQuery)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, person := range batch {
+	for i, person := range batch {
 		strStack := strings.Join(person.Stack, ",")
+		bulkInsert += "(" +
+			person.ID.String() + ", " +
+			person.Nickname + ", " +
+			person.Name + ", " +
+			person.Birthdate + ", " +
+			strStack + ")"
 
-		_, err := stmt.Exec(
-			person.ID,
-			person.Nickname,
-			person.Name,
-			person.Birthdate,
-			strStack,
-		)
-		if err != nil {
-			log.Printf("Error inserting person: %v", err)
+		if i != len(batch)-1 {
+			bulkInsert += ", "
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		log.Printf("Error committing insert transaction: %v", err)
-	}
+	// tx, err := db.Begin()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// stmt, err := tx.Prepare(InsertPersonQuery)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// for _, person := range batch {
+	// 	strStack := strings.Join(person.Stack, ",")
+
+	// 	_, err := stmt.Exec(
+	// 		person.ID,
+	// 		person.Nickname,
+	// 		person.Name,
+	// 		person.Birthdate,
+	// 		strStack,
+	// 	)
+	// 	if err != nil {
+	// 		log.Printf("Error inserting person: %v", err)
+	// 	}
+	// }
+
+	// err = tx.Commit()
+	// if err != nil {
+	// 	log.Printf("Error committing insert transaction: %v", err)
+	// }
 }
