@@ -8,11 +8,11 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 go build -v -o ./bin/rinha ./cmd/rinha.go
+RUN CGO_ENABLED=1 go build -ldflags='-s -w -extldflags "-static"' -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM debian:buster-slim
 RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  ca-certificates build-essential && \
+  ca-certificates && \
   rm -rf /var/lib/apt/lists/*
 
 ENV GIN_MODE release
