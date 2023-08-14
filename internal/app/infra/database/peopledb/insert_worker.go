@@ -3,6 +3,7 @@ package peopledb
 import (
 	"arena"
 	"database/sql"
+	"log"
 	"strings"
 	"time"
 
@@ -61,6 +62,11 @@ func insertBatch(batch []people.Person, db *sql.DB) {
 		if i != len(batch)-1 {
 			bulkInsert += ", "
 		}
+	}
+
+	_, err := db.Exec(bulkInsert)
+	if err != nil {
+		log.Printf("Error inserting batch: %v", err)
 	}
 
 	// tx, err := db.Begin()
