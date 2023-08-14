@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-ENV GOEXPERIMENTS arenas
+ENV GOEXPERIMENT arenas
 
 RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
 
