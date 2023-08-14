@@ -88,24 +88,49 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	sqliteRows, err := p.searchdb.Query(
-		`SELECT * FROM people(?) LIMIT 50;`,
+	result, err := p.searchFts(term)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	result, err = p.localSearch(term)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		log.Printf("sqlite hit - len %d - term %s", len(result), term)
+		return result, nil
+	}
+
+	result, err = p.searchTrigram(term)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleTrgmQuery,
 		term,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.mapSearchResult(sqliteRows)
+	result, err := p.mapSearchResult(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(result) > 0 {
-		log.Printf("sqlite hit - len %d - term %s", len(result), term)
-		return result, nil
-	}
+	return result, nil
+}
 
+func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
 	rows, err := p.db.Query(
 		SearchPeopleFtsQuery,
 		term,
@@ -115,24 +140,24 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	}
 	defer rows.Close()
 
-	result, err = p.mapSearchResult(rows)
+	result, err := p.mapSearchResult(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(result) > 0 {
-		return result, nil
-	}
+	return result, nil
+}
 
-	rows, err = p.db.Query(
-		SearchPeopleTrgmQuery,
+func (p *PersonRepository) localSearch(term string) ([]people.Person, error) {
+	rows, err := p.searchdb.Query(
+		`SELECT * FROM people(?) LIMIT 50;`,
 		term,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err = p.mapSearchResult(rows)
+	result, err := p.mapSearchResult(rows)
 	if err != nil {
 		return nil, err
 	}
