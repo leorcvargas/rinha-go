@@ -40,8 +40,6 @@ services:
         limits:
           cpus: "0.3"
           memory: "0.5GB"
-    volumes:
-      - ./localsearch.db:/localsearch.db
 
   api2:
     build: .
@@ -57,8 +55,6 @@ services:
         limits:
           cpus: "0.3"
           memory: "0.5GB"
-    volumes:
-      - ./localsearch.db:/localsearch.db
 
   nginx:
     image: nginx:1.25.1-alpine

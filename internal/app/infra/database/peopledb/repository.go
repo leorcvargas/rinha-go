@@ -10,10 +10,8 @@ import (
 )
 
 type PersonRepository struct {
-	db               *sql.DB
-	cache            *PeopleDbCache
-	roundRobinSearch *roundRobinSearch
-	local            *sql.DB
+	db    *sql.DB
+	cache *PeopleDbCache
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -35,17 +33,6 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	}
 
 	p.cache.Set(person.ID.String(), person)
-
-	go func() {
-		p.local.Exec(
-			InsertPersonQuery,
-			person.ID,
-			person.Nickname,
-			person.Name,
-			person.Birthdate,
-			strStack,
-		)
-	}()
 
 	return person, nil
 }
@@ -88,15 +75,15 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	result, err := p.searchFts(term)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		return result, nil
-	}
+	// result, err := p.searchFts(term)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if len(result) > 0 {
+	// 	return result, nil
+	// }
 
-	return p.roundRobinSearch.Search(term)
+	return p.searchTrigram(term)
 }
 
 func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
@@ -115,6 +102,18 @@ func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
 	}
 
 	return result, nil
+}
+
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapSearchResult(rows)
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
@@ -158,19 +157,8 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 }
 
 func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
-	localdb := NewLocalDatabase()
-
-	searchers := []TrigramSearcher{
-		&LocalTrigramSearcher{db: localdb},
-		&PsqlTrigramSearcher{db: db},
-	}
-
-	rrs := NewRoundRobinSearcher(searchers...)
-
 	return &PersonRepository{
-		db:               db,
-		cache:            cache,
-		roundRobinSearch: rrs,
-		local:            localdb,
+		db:    db,
+		cache: cache,
 	}
 }
