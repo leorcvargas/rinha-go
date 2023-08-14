@@ -10,9 +10,10 @@ import (
 )
 
 type PersonRepository struct {
-	db       *sql.DB
-	cache    *PeopleDbCache
-	searchdb *sql.DB
+	db               *sql.DB
+	cache            *PeopleDbCache
+	roundRobinSearch *roundRobinSearch
+	searchdb         *sql.DB
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -95,58 +96,7 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return result, nil
 	}
 
-	searchChan := make(chan []people.Person, 2)
-	errChan := make(chan error, 2)
-
-	go func() {
-		result, err = p.localSearch(term)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		searchChan <- result
-	}()
-
-	go func() {
-		result, err = p.searchTrigram(term)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		searchChan <- result
-	}()
-
-	for i := 0; i < 2; i++ {
-		select {
-		case result = <-searchChan:
-			if len(result) > 0 {
-				return result, nil
-			}
-		case err := <-errChan:
-			return nil, err
-		}
-	}
-
-	return result, nil
-}
-
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-	rows, err := p.db.Query(
-		SearchPeopleTrgmQuery,
-		term,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := p.mapSearchResult(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return p.roundRobinSearch.Search(term)
 }
 
 func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
@@ -159,24 +109,7 @@ func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
 	}
 	defer rows.Close()
 
-	result, err := p.mapSearchResult(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (p *PersonRepository) localSearch(term string) ([]people.Person, error) {
-	rows, err := p.searchdb.Query(
-		`SELECT * FROM people(?) LIMIT 50;`,
-		term,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := p.mapSearchResult(rows)
+	result, err := mapSearchResult(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +130,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	return total, nil
 }
 
-func (p *PersonRepository) mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
+func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0)
 	for rows.Next() {
 		var person people.Person
@@ -222,9 +155,19 @@ func (p *PersonRepository) mapSearchResult(rows *sql.Rows) ([]people.Person, err
 }
 
 func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
+	sqlitedb := NewSearchDatabase()
+
+	searchers := []TrigramSearcher{
+		&LocalTrigramSearcher{db: sqlitedb},
+		&PsqlTrigramSearcher{db: sqlitedb},
+	}
+
+	rrs := NewRoundRobinSearcher(searchers...)
+
 	return &PersonRepository{
-		db:       db,
-		cache:    cache,
-		searchdb: NewSearchDatabase(),
+		db:               db,
+		cache:            cache,
+		roundRobinSearch: rrs,
+		searchdb:         sqlitedb,
 	}
 }
