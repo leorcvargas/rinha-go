@@ -2,9 +2,7 @@ package peopledb
 
 import (
 	"database/sql"
-	"log"
 	"sync/atomic"
-	"time"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
@@ -18,12 +16,10 @@ type LocalTrigramSearcher struct {
 }
 
 func (l *LocalTrigramSearcher) Search(term string) ([]people.Person, error) {
-	t := time.Now()
 	rows, err := l.db.Query(
 		`SELECT * FROM people(?) LIMIT 50;`,
 		term,
 	)
-	log.Printf("LocalTrigramSearcher: %s", time.Since(t))
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +28,6 @@ func (l *LocalTrigramSearcher) Search(term string) ([]people.Person, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("local result len: %d", len(result))
 
 	return result, nil
 }
