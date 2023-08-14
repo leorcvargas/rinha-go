@@ -15,7 +15,7 @@ services:
       resources:
         limits:
           cpus: "0.3"
-          memory: "0.5MB"
+          memory: "0.5GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
