@@ -13,7 +13,7 @@ type PersonRepository struct {
 	db               *sql.DB
 	cache            *PeopleDbCache
 	roundRobinSearch *roundRobinSearch
-	searchdb         *sql.DB
+	local            *sql.DB
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -37,7 +37,7 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	p.cache.Set(person.ID.String(), person)
 
 	go func() {
-		p.searchdb.Exec(
+		p.local.Exec(
 			InsertPersonQuery,
 			person.ID,
 			person.Nickname,
@@ -135,18 +135,21 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	for rows.Next() {
 		var person people.Person
 		var strStack string
+		var birthdate string
 
 		err := rows.Scan(
 			&person.ID,
 			&person.Nickname,
 			&person.Name,
-			&person.Birthdate,
+			&birthdate,
 			&strStack,
 		)
-		person.Stack = strings.Split(strStack, ",")
 		if err != nil {
 			return nil, err
 		}
+
+		person.Stack = strings.Split(strStack, ",")
+		person.Birthdate = birthdate[0:10]
 
 		result = append(result, person)
 	}
@@ -155,11 +158,11 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 }
 
 func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
-	sqlitedb := NewSearchDatabase()
+	localdb := NewLocalDatabase()
 
 	searchers := []TrigramSearcher{
-		&LocalTrigramSearcher{db: sqlitedb},
-		&PsqlTrigramSearcher{db: sqlitedb},
+		&LocalTrigramSearcher{db: localdb},
+		&PsqlTrigramSearcher{db: db},
 	}
 
 	rrs := NewRoundRobinSearcher(searchers...)
@@ -168,6 +171,6 @@ func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
 		db:               db,
 		cache:            cache,
 		roundRobinSearch: rrs,
-		searchdb:         sqlitedb,
+		local:            localdb,
 	}
 }

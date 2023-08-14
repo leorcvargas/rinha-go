@@ -7,14 +7,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func NewSearchDatabase() *sql.DB {
-	db, err := sql.Open("sqlite3", "./search.db")
+func NewLocalDatabase() *sql.DB {
+	db, err := sql.Open("sqlite3", "./local.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	statement := `CREATE VIRTUAL TABLE people USING fts5(
-		id,
+	statement := `CREATE VIRTUAL TABLE IF NOT EXISTS people USING fts5(
+		id UNINDEXED,
 		nickname,
 		name,
 		birthdate,
