@@ -85,8 +85,6 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return nil, err
 	}
 	if len(result) > 0 {
-		go p.mem.BulkInsert(result)
-
 		return result, nil
 	}
 
@@ -94,8 +92,6 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	go p.mem.BulkInsert(result)
 
 	return result, nil
 }
