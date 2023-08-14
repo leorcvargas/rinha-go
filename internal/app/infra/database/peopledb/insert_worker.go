@@ -3,10 +3,12 @@ package peopledb
 import (
 	"arena"
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
@@ -48,54 +50,35 @@ func Worker(insertChan chan people.Person, db *sql.DB) {
 }
 
 func insertBatch(batch []people.Person, db *sql.DB) {
-	bulkInsert := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
+	valueStrings := make([]string, 0, len(batch))
+	valueArgs := make([]interface{}, 0, len(batch)*5)
 
 	for i, person := range batch {
-		strStack := strings.Join(person.Stack, ",")
-		bulkInsert += "(" +
-			person.ID.String() + ", " +
-			person.Nickname + ", " +
-			person.Name + ", " +
-			person.Birthdate + ", " +
-			strStack + ")"
-
-		if i != len(batch)-1 {
-			bulkInsert += ", "
+		if person.ID == uuid.Nil {
+			continue
 		}
-	}
 
-	_, err := db.Exec(bulkInsert)
+		valueStrings = append(
+			valueStrings,
+			fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5),
+		)
+
+		valueArgs = append(
+			valueArgs,
+			person.ID,
+			person.Nickname,
+			person.Name,
+			person.Birthdate,
+			strings.Join(person.Stack, ","),
+		)
+	}
+	stmt := fmt.Sprintf(
+		"INSERT INTO people (id, nickname, name, birthdate, stack) VALUES %s",
+		strings.Join(valueStrings, ","),
+	)
+
+	_, err := db.Exec(stmt, valueArgs...)
 	if err != nil {
 		log.Printf("Error inserting batch: %v", err)
 	}
-
-	// tx, err := db.Begin()
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// stmt, err := tx.Prepare(InsertPersonQuery)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// for _, person := range batch {
-	// 	strStack := strings.Join(person.Stack, ",")
-
-	// 	_, err := stmt.Exec(
-	// 		person.ID,
-	// 		person.Nickname,
-	// 		person.Name,
-	// 		person.Birthdate,
-	// 		strStack,
-	// 	)
-	// 	if err != nil {
-	// 		log.Printf("Error inserting person: %v", err)
-	// 	}
-	// }
-
-	// err = tx.Commit()
-	// if err != nil {
-	// 	log.Printf("Error committing insert transaction: %v", err)
-	// }
 }
