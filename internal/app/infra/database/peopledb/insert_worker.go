@@ -16,10 +16,9 @@ func Worker(insertChan chan people.Person, db *sql.DB) {
 	batchSize := 20
 
 	a := arena.NewArena()
-	batch := arena.MakeSlice[people.Person](a, batchSize, batchSize)
+	batchCap := batchSize * 1024
+	batch := arena.MakeSlice[people.Person](a, batchSize, batchCap)
 	at := 0
-
-	batchInsertTimer := time.NewTimer(batchTimerAmount)
 
 	for {
 		select {
@@ -35,7 +34,7 @@ func Worker(insertChan chan people.Person, db *sql.DB) {
 				a = arena.NewArena()
 				batch = arena.MakeSlice[people.Person](a, batchSize, batchSize)
 			}
-		case <-batchInsertTimer.C:
+		case <-time.Tick(5 * time.Second):
 			if at > 0 {
 				insertBatch(batch, db)
 
@@ -44,7 +43,6 @@ func Worker(insertChan chan people.Person, db *sql.DB) {
 				a = arena.NewArena()
 				batch = arena.MakeSlice[people.Person](a, batchSize, batchSize)
 			}
-			batchInsertTimer.Reset(batchTimerAmount)
 		}
 	}
 }
