@@ -24,6 +24,7 @@ func (p *PeopleMemoryStorage) Search(term string) []people.Person {
 
 	for _, person := range p.list {
 		search := person.Name + " " + person.Nickname + " " + strings.Join(person.Stack, " ")
+		search = strings.ToLower(search)
 
 		if strings.Contains(search, term) {
 			result = append(result, person)
