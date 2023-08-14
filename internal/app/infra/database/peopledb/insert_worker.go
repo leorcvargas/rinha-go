@@ -1,6 +1,7 @@
 package peopledb
 
 import (
+	"arena"
 	"database/sql"
 	"log"
 	"strings"
@@ -9,27 +10,39 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
-const batchTimerAmount = 5 * time.Second
+const batchTimerAmount = 10 * time.Second
 
 func Worker(insertChan chan people.Person, db *sql.DB) {
 	batchSize := 20
-	batch := make([]people.Person, 0, batchSize)
+
+	a := arena.NewArena()
+	batch := arena.MakeSlice[people.Person](a, batchSize, batchSize)
+	at := 0
 
 	batchInsertTimer := time.NewTimer(batchTimerAmount)
 
 	for {
 		select {
 		case person := <-insertChan:
-			batch = append(batch, person)
+			batch[at] = person
+			at += 1
 
-			if len(batch) == batchSize {
+			if at == batchSize {
 				insertBatch(batch, db)
-				batch = make([]people.Person, 0, batchSize)
+
+				a.Free()
+				at = 0
+				a = arena.NewArena()
+				batch = arena.MakeSlice[people.Person](a, batchSize, batchSize)
 			}
 		case <-batchInsertTimer.C:
-			if len(batch) > 0 {
+			if at > 0 {
 				insertBatch(batch, db)
-				batch = make([]people.Person, 0, batchSize)
+
+				a.Free()
+				at = 0
+				a = arena.NewArena()
+				batch = arena.MakeSlice[people.Person](a, batchSize, batchSize)
 			}
 			batchInsertTimer.Reset(batchTimerAmount)
 		}
