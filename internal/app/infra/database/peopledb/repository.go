@@ -77,7 +77,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	return p.Search(term)
+	return p.mem.Search(term), nil
 }
 
 // func (p *PersonRepository) Search(term string) ([]people.Person, error) {
