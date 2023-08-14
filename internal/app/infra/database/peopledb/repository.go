@@ -77,50 +77,51 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	return p.mem.Search(term), nil
+	memResult := p.mem.Search(term)
+	if len(memResult) > 0 {
+		return memResult, nil
+	}
+
+	result, err := p.searchFts(term)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	return p.searchTrigram(term)
 }
 
-// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-// 	result, err := p.searchFts(term)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if len(result) > 0 {
-// 		return result, nil
-// 	}
+func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleFtsQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-// 	return p.searchTrigram(term)
-// }
+	result, err := mapSearchResult(rows)
+	if err != nil {
+		return nil, err
+	}
 
-// func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		SearchPeopleFtsQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
+	return result, nil
+}
 
-// 	result, err := mapSearchResult(rows)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-// 	return result, nil
-// }
-
-// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		SearchPeopleTrgmQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return mapSearchResult(rows)
-// }
+	return mapSearchResult(rows)
+}
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
