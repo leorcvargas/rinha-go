@@ -11,6 +11,7 @@ import (
 type PersonRepository struct {
 	db         *sql.DB
 	cache      *PeopleDbCache
+	mem        *PeopleMemoryStorage
 	insertChan chan people.Person
 }
 
@@ -24,8 +25,14 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 		return nil, people.ErrNicknameTaken
 	}
 
-	p.cache.SetNickname(person.Nickname)
-	p.cache.Set(person.ID.String(), person)
+	go func() {
+		p.mem.Insert(*person)
+	}()
+
+	go func() {
+		p.cache.SetNickname(person.Nickname)
+		p.cache.Set(person.ID.String(), person)
+	}()
 
 	p.insertChan <- *person
 
@@ -70,46 +77,50 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	result, err := p.searchFts(term)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		return result, nil
-	}
-
-	return p.searchTrigram(term)
+	return p.Search(term)
 }
 
-func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
-	rows, err := p.db.Query(
-		SearchPeopleFtsQuery,
-		term,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+// 	result, err := p.searchFts(term)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if len(result) > 0 {
+// 		return result, nil
+// 	}
 
-	result, err := mapSearchResult(rows)
-	if err != nil {
-		return nil, err
-	}
+// 	return p.searchTrigram(term)
+// }
 
-	return result, nil
-}
+// func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
+// 	rows, err := p.db.Query(
+// 		SearchPeopleFtsQuery,
+// 		term,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
 
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-	rows, err := p.db.Query(
-		SearchPeopleTrgmQuery,
-		term,
-	)
-	if err != nil {
-		return nil, err
-	}
+// 	result, err := mapSearchResult(rows)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return mapSearchResult(rows)
-}
+// 	return result, nil
+// }
+
+// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+// 	rows, err := p.db.Query(
+// 		SearchPeopleTrgmQuery,
+// 		term,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return mapSearchResult(rows)
+// }
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
@@ -151,7 +162,7 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
+func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, mem *PeopleMemoryStorage) people.Repository {
 	insertChan := make(chan people.Person)
 	go Worker(insertChan, db)
 
@@ -159,5 +170,6 @@ func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
 		db:         db,
 		cache:      cache,
 		insertChan: insertChan,
+		mem:        mem,
 	}
 }
