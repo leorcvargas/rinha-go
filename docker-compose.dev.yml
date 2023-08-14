@@ -82,7 +82,7 @@ services:
         limits:
           cpus: "0.1"
           memory: "0.5GB"
-    command: ["redis-server", "--save", "\"\"", "--appendonly", "no"]
+    command: ["redis-server", "--save", '""', "--appendonly", "no"]
 
 volumes:
   postgres-db:
