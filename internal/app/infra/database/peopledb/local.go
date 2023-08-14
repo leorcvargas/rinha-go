@@ -3,12 +3,16 @@ package peopledb
 import (
 	"database/sql"
 	"log"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func NewLocalDatabase() *sql.DB {
-	db, err := sql.Open("sqlite3", "./local.db")
+	os.Remove("./localsearch.db")
+	os.Create("./localsearch.db")
+
+	db, err := sql.Open("sqlite3", "./localsearch.db")
 	if err != nil {
 		log.Fatal(err)
 	}

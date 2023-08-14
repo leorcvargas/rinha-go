@@ -3,4 +3,3 @@ bin/
 dist/
 
 node_modules
-local.db
