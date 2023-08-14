@@ -14,8 +14,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: "1GB"
+          cpus: "0.3"
+          memory: "0.5MB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
@@ -38,8 +38,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.35"
-          memory: "0.5GB"
+          cpus: "0.45"
+          memory: "0.75GB"
 
   api2:
     build: .
@@ -53,8 +53,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.35"
-          memory: "0.5GB"
+          cpus: "0.45"
+          memory: "0.75GB"
 
   nginx:
     image: nginx:1.25.1-alpine

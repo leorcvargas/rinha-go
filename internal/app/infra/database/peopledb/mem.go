@@ -18,6 +18,14 @@ func (p *PeopleMemoryStorage) Insert(person people.Person) (uint64, error) {
 	return p.size, nil
 }
 
+func (p *PeopleMemoryStorage) BulkInsert(batch []people.Person) (uint64, error) {
+	batchSize := len(batch)
+	p.list = append(p.list, batch...)
+	p.size += uint64(batchSize)
+
+	return p.size, nil
+}
+
 func (p *PeopleMemoryStorage) Search(term string) []people.Person {
 	limit := 50
 	result := make([]people.Person, 0, limit)
