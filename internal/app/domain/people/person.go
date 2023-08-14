@@ -1,6 +1,10 @@
 package people
 
-import "github.com/google/uuid"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 type Person struct {
 	ID        uuid.UUID
@@ -8,6 +12,10 @@ type Person struct {
 	Name      string
 	Birthdate string
 	Stack     []string
+}
+
+func (p *Person) StackString() string {
+	return strings.Join(p.Stack, ",")
 }
 
 func BuildPerson(

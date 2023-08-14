@@ -11,8 +11,8 @@ import (
 type PersonRepository struct {
 	db         *sql.DB
 	cache      *PeopleDbCache
-	mem        *PeopleMemoryStorage
 	insertChan chan people.Person
+	memDb      *MemDb
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -27,8 +27,6 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 
 	p.cache.SetNickname(person.Nickname)
 	p.cache.Set(person.ID.String(), person)
-
-	// go p.mem.Insert(*person)
 
 	p.insertChan <- *person
 
@@ -74,11 +72,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	var result []people.Person
-
-	// result = p.mem.Search(term)
-	// if len(result) > 0 {
-	// 	return result, nil
-	// }
 
 	result, err := p.searchFts(term)
 	if err != nil {
@@ -166,7 +159,7 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, mem *PeopleMemoryStorage) people.Repository {
+func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, memDb *MemDb) people.Repository {
 	insertChan := make(chan people.Person)
 	go Worker(insertChan, db)
 
@@ -174,6 +167,6 @@ func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, mem *PeopleMemoryStor
 		db:         db,
 		cache:      cache,
 		insertChan: insertChan,
-		mem:        mem,
+		memDb:      memDb,
 	}
 }

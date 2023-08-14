@@ -1,54 +1,111 @@
 package peopledb
 
 import (
+	"errors"
+	"log"
 	"strings"
 
+	"github.com/hashicorp/go-memdb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
-type PeopleMemoryStorage struct {
-	list []people.Person
-	size uint64
+var ErrMemDbNotFound = errors.New("memdb not found")
+
+type MemDb struct {
+	db *memdb.MemDB
 }
 
-func (p *PeopleMemoryStorage) Insert(person people.Person) (uint64, error) {
-	p.list = append(p.list, person)
-	p.size++
-
-	return p.size, nil
+type PersonMem struct {
+	Key string
+	people.Person
 }
 
-func (p *PeopleMemoryStorage) BulkInsert(batch []people.Person) (uint64, error) {
-	batchSize := len(batch)
-	p.list = append(p.list, batch...)
-	p.size += uint64(batchSize)
-
-	return p.size, nil
+func (m *MemDb) DB() *memdb.MemDB {
+	return m.db
 }
 
-func (p *PeopleMemoryStorage) Search(term string) []people.Person {
-	limit := 50
-	result := make([]people.Person, 0, limit)
+func (m *MemDb) Insert(person people.Person) error {
+	txn := m.db.Txn(true)
+	defer txn.Abort()
 
-	for _, person := range p.list {
-		search := person.Name + " " + person.Nickname + " " + strings.Join(person.Stack, " ")
-		search = strings.ToLower(search)
+	key := person.Nickname + " " + person.Name + " " + person.StackString()
+	key = strings.ToLower(key)
+	personMem := PersonMem{
+		Key:    key,
+		Person: person,
+	}
 
-		if strings.Contains(search, term) {
-			result = append(result, person)
-		}
+	err := txn.Insert("people", personMem)
+	if err != nil {
+		return err
+	}
 
-		if len(result) >= limit {
+	txn.Commit()
+	return nil
+}
+
+func (m *MemDb) Search(term string) ([]people.Person, error) {
+	txn := m.db.Txn(false)
+	defer txn.Abort()
+
+	it, err := txn.Get("people", "id")
+	if err != nil {
+		return nil, err
+	}
+
+	var people []people.Person
+	for {
+		raw := it.Next()
+		if raw == nil {
 			break
 		}
+
+		personMem := raw.(PersonMem)
+		if strings.Contains(personMem.Key, term) {
+			people = append(people, personMem.Person)
+		}
 	}
 
-	return result
+	return people, nil
 }
 
-func NewPeopleMemoryStorage() *PeopleMemoryStorage {
-	return &PeopleMemoryStorage{
-		list: make([]people.Person, 0, 100000),
-		size: 0,
+func (m *MemDb) Get(key string) (*people.Person, error) {
+	txn := m.db.Txn(false)
+	defer txn.Abort()
+
+	raw, err := txn.First("people", "id", key)
+	if err != nil {
+		return nil, err
 	}
+
+	if raw == nil {
+		return nil, ErrMemDbNotFound
+	}
+
+	personMem := raw.(PersonMem)
+	return &personMem.Person, nil
+}
+
+func NewMemDb() *MemDb {
+	schema := &memdb.DBSchema{
+		Tables: map[string]*memdb.TableSchema{
+			"people": {
+				Name: "people",
+				Indexes: map[string]*memdb.IndexSchema{
+					"id": {
+						Name:    "id",
+						Unique:  true,
+						Indexer: &memdb.StringFieldIndex{Field: "Key"},
+					},
+				},
+			},
+		},
+	}
+
+	db, err := memdb.NewMemDB(schema)
+	if err != nil {
+		log.Fatalf("Failed to create memdb: %v", err)
+	}
+
+	return &MemDb{db: db}
 }

@@ -7,7 +7,7 @@ import (
 
 var Module = fx.Provide(
 	NewPeopleDbCache,
-	NewPeopleMemoryStorage,
+	NewMemDb,
 	fx.Annotate(
 		NewPersonRepository,
 		fx.As(new(people.Repository)),
