@@ -2,6 +2,7 @@ package peopledb
 
 import (
 	"database/sql"
+	"log"
 	"strings"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -10,8 +11,9 @@ import (
 )
 
 type PersonRepository struct {
-	db    *sql.DB
-	cache *PeopleDbCache
+	db       *sql.DB
+	cache    *PeopleDbCache
+	searchdb *sql.DB
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -33,6 +35,17 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	}
 
 	p.cache.Set(person.ID.String(), person)
+
+	go func() {
+		p.searchdb.Exec(
+			InsertPersonQuery,
+			person.ID,
+			person.Nickname,
+			person.Name,
+			person.Birthdate,
+			strStack,
+		)
+	}()
 
 	return person, nil
 }
@@ -75,6 +88,24 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+	sqliteRows, err := p.searchdb.Query(
+		`SELECT * FROM people(?) LIMIT 50;`,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := p.mapSearchResult(sqliteRows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) > 0 {
+		log.Printf("sqlite hit - len %d - term %s", len(result), term)
+		return result, nil
+	}
+
 	rows, err := p.db.Query(
 		SearchPeopleFtsQuery,
 		term,
@@ -84,7 +115,7 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	}
 	defer rows.Close()
 
-	result, err := p.mapSearchResult(rows)
+	result, err = p.mapSearchResult(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +179,8 @@ func (p *PersonRepository) mapSearchResult(rows *sql.Rows) ([]people.Person, err
 
 func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
 	return &PersonRepository{
-		db:    db,
-		cache: cache,
+		db:       db,
+		cache:    cache,
+		searchdb: NewSearchDatabase(),
 	}
 }

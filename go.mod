@@ -9,6 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.15.0
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.9
+	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/redis/go-redis/v9 v9.0.0-rc.4
 	go.uber.org/fx v1.20.0
 )

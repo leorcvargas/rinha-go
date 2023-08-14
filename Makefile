@@ -17,7 +17,7 @@ docker-push:
 	docker buildx build --push --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --tag leorcvargas/rinha-go .
 
 docker-down:
-	docker-compose down -v --remove-orphans
+	docker-compose -f docker-compose.dev.yml down -v --remove-orphans
 
-docker-up: docker docker-down
-	docker-compose up --build
+docker-up: docker-down
+	docker-compose -f docker-compose.dev.yml up --build
