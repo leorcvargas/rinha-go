@@ -14,7 +14,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.6"
+          cpus: "0.8"
           memory: "1GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
@@ -38,10 +38,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.3"
+          cpus: "0.2"
           memory: "0.5GB"
-    volumes:
-      - ./localsearch.db:/localsearch.db
 
   api2:
     build: .
@@ -55,10 +53,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.3"
+          cpus: "0.2"
           memory: "0.5GB"
-    volumes:
-      - ./localsearch.db:/localsearch.db
 
   nginx:
     image: nginx:1.25.1-alpine
@@ -86,7 +82,7 @@ services:
         limits:
           cpus: "0.1"
           memory: "0.5GB"
-    command: ["redis-server", "--save", "\"\"", "--appendonly", "no"]
+    command: ["redis-server", "--save", '""', "--appendonly", "no"]
 
 volumes:
   postgres-db:

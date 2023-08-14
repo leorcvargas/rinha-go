@@ -5,47 +5,29 @@ import (
 	"strings"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
-	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
 type PersonRepository struct {
-	db               *sql.DB
-	cache            *PeopleDbCache
-	roundRobinSearch *roundRobinSearch
-	local            *sql.DB
+	db         *sql.DB
+	cache      *PeopleDbCache
+	insertChan chan people.Person
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	strStack := strings.Join(person.Stack, ",")
-	_, err := p.db.Exec(
-		InsertPersonQuery,
-		person.ID,
-		person.Nickname,
-		person.Name,
-		person.Birthdate,
-		strStack,
-	)
+	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
 	if err != nil {
-		if err, ok := err.(*pq.Error); ok && err.Code == "23505" {
-			return nil, people.ErrNicknameTaken
-		}
-
 		return nil, err
 	}
 
+	if nicknameTaken {
+		return nil, people.ErrNicknameTaken
+	}
+
+	p.cache.SetNickname(person.Nickname)
 	p.cache.Set(person.ID.String(), person)
 
-	go func() {
-		p.local.Exec(
-			InsertPersonQuery,
-			person.ID,
-			person.Nickname,
-			person.Name,
-			person.Birthdate,
-			strStack,
-		)
-	}()
+	p.insertChan <- *person
 
 	return person, nil
 }
@@ -96,7 +78,7 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return result, nil
 	}
 
-	return p.roundRobinSearch.Search(term)
+	return p.searchTrigram(term)
 }
 
 func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
@@ -115,6 +97,18 @@ func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
 	}
 
 	return result, nil
+}
+
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapSearchResult(rows)
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
@@ -158,19 +152,12 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 }
 
 func NewPersonRepository(db *sql.DB, cache *PeopleDbCache) people.Repository {
-	localdb := NewLocalDatabase()
-
-	searchers := []TrigramSearcher{
-		&LocalTrigramSearcher{db: localdb},
-		&PsqlTrigramSearcher{db: db},
-	}
-
-	rrs := NewRoundRobinSearcher(searchers...)
+	insertChan := make(chan people.Person)
+	go Worker(insertChan, db)
 
 	return &PersonRepository{
-		db:               db,
-		cache:            cache,
-		roundRobinSearch: rrs,
-		local:            localdb,
+		db:         db,
+		cache:      cache,
+		insertChan: insertChan,
 	}
 }

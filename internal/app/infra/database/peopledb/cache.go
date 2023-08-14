@@ -30,6 +30,19 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	return &person, nil
 }
 
+func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
+	_, err := p.cache.Get(ctx, nickname).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
 	item, err := json.Marshal(person)
 	if err != nil {
@@ -42,6 +55,12 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	}
 
 	return person, nil
+}
+
+func (p *PeopleDbCache) SetNickname(nickname string) error {
+	_, err := p.cache.Set(ctx, nickname, true, time.Hour).Result()
+
+	return err
 }
 
 func NewPeopleDbCache() *PeopleDbCache {
