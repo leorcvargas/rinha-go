@@ -28,7 +28,7 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	p.cache.SetNickname(person.Nickname)
 	p.cache.Set(person.ID.String(), person)
 
-	go p.mem.Insert(*person)
+	// go p.mem.Insert(*person)
 
 	p.insertChan <- *person
 
@@ -75,10 +75,10 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	var result []people.Person
 
-	result = p.mem.Search(term)
-	if len(result) > 0 {
-		return result, nil
-	}
+	// result = p.mem.Search(term)
+	// if len(result) > 0 {
+	// 	return result, nil
+	// }
 
 	result, err := p.searchFts(term)
 	if err != nil {
