@@ -10,10 +10,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
 
-FROM debian:buster-slim
-RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  ca-certificates && \
-  rm -rf /var/lib/apt/lists/*
+FROM alpine:3.14.10
 
 ENV GIN_MODE release
 
