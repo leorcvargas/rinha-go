@@ -75,13 +75,13 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	// result, err := p.searchFts(term)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if len(result) > 0 {
-	// 	return result, nil
-	// }
+	result, err := p.searchFts(term)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
 
 	return p.searchTrigram(term)
 }
