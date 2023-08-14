@@ -2,7 +2,6 @@ package peopledb
 
 import (
 	"database/sql"
-	"log"
 	"strings"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -96,18 +95,38 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return result, nil
 	}
 
-	result, err = p.localSearch(term)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		log.Printf("sqlite hit - len %d - term %s", len(result), term)
-		return result, nil
-	}
+	searchChan := make(chan []people.Person, 2)
+	errChan := make(chan error, 2)
 
-	result, err = p.searchTrigram(term)
-	if err != nil {
-		return nil, err
+	go func() {
+		result, err = p.localSearch(term)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		searchChan <- result
+	}()
+
+	go func() {
+		result, err = p.searchTrigram(term)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		searchChan <- result
+	}()
+
+	for i := 0; i < 2; i++ {
+		select {
+		case result = <-searchChan:
+			if len(result) > 0 {
+				return result, nil
+			}
+		case err := <-errChan:
+			return nil, err
+		}
 	}
 
 	return result, nil
