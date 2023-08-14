@@ -72,10 +72,18 @@ func insertBatch(batch []people.Person, db *sql.DB) {
 			strings.Join(person.Stack, ","),
 		)
 	}
-	stmt := fmt.Sprintf(
-		"INSERT INTO people (id, nickname, name, birthdate, stack) VALUES %s",
-		strings.Join(valueStrings, ","),
-	)
+	// stmt := fmt.Sprintf(
+	// 	"INSERT INTO people (id, nickname, name, birthdate, stack) VALUES %s",
+	// 	strings.Join(valueStrings, ","),
+	// )
+	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
+	for i := 0; i < len(valueStrings); i++ {
+		if i == 0 {
+			stmt += valueStrings[i]
+		} else {
+			stmt += "," + valueStrings[i]
+		}
+	}
 
 	_, err := db.Exec(stmt, valueArgs...)
 	if err != nil {
