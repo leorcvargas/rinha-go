@@ -35,6 +35,10 @@ func (i *Inserter) Run() {
 			}
 
 		case <-time.Tick(5 * time.Second):
+			if len(i.batch) == 0 {
+				continue
+			}
+
 			i.processBatch()
 			i.clearBatch()
 		}
@@ -67,8 +71,9 @@ func (i *Inserter) processBatch() error {
 }
 
 func (i *Inserter) insertBatch() error {
-	valueStrings := make([]string, 0)
-	valueArgs := make([]interface{}, 0)
+	batchLength := len(i.batch)
+	valueStrings := make([]string, batchLength, batchLength)
+	valueArgs := make([]interface{}, batchLength*5, batchLength*5)
 
 	for i, person := range i.batch {
 		if person.ID == uuid.Nil {
@@ -76,11 +81,11 @@ func (i *Inserter) insertBatch() error {
 		}
 
 		valueStrings[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5)
-		valueArgs[i*5+1] = person.ID
-		valueArgs[i*5+2] = person.Nickname
-		valueArgs[i*5+3] = person.Name
-		valueArgs[i*5+4] = person.Birthdate
-		valueArgs[i*5+5] = strings.Join(person.Stack, ",")
+		valueArgs[i*5] = person.ID
+		valueArgs[i*5+1] = person.Nickname
+		valueArgs[i*5+2] = person.Name
+		valueArgs[i*5+3] = person.Birthdate
+		valueArgs[i*5+4] = strings.Join(person.Stack, ",")
 	}
 
 	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
