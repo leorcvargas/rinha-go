@@ -10,7 +10,7 @@ import (
 
 type PersonInsertSubscriber struct {
 	cache *peopledb.PeopleDbCache
-	memDb *peopledb.MemDb
+	mem2  *peopledb.Mem2
 }
 
 func (p *PersonInsertSubscriber) Subscribe() {
@@ -31,13 +31,13 @@ func (p *PersonInsertSubscriber) Subscribe() {
 			panic(err)
 		}
 
-		p.memDb.BulkInsert(people)
+		p.mem2.AddBatch(people)
 	}
 }
 
-func NewPersonInsertSubscriber(cache *peopledb.PeopleDbCache, memDb *peopledb.MemDb) *PersonInsertSubscriber {
+func NewPersonInsertSubscriber(cache *peopledb.PeopleDbCache, mem2 *peopledb.Mem2) *PersonInsertSubscriber {
 	return &PersonInsertSubscriber{
 		cache: cache,
-		memDb: memDb,
+		mem2:  mem2,
 	}
 }

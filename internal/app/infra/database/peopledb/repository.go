@@ -12,7 +12,8 @@ type PersonRepository struct {
 	db         *sql.DB
 	cache      *PeopleDbCache
 	insertChan chan people.Person
-	memDb      *MemDb
+	// memDb      *MemDb
+	mem2 *Mem2
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -71,7 +72,8 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	return p.memDb.Search(term)
+	result := p.mem2.Search(term)
+	return result, nil
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
@@ -114,11 +116,11 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, memDb *MemDb, insertChan chan people.Person) people.Repository {
+func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person) people.Repository {
 	return &PersonRepository{
 		db:         db,
 		cache:      cache,
 		insertChan: insertChan,
-		memDb:      memDb,
+		mem2:       mem2,
 	}
 }
