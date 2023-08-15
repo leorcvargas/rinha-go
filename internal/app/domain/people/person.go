@@ -7,7 +7,7 @@ import (
 )
 
 type Person struct {
-	ID        uuid.UUID
+	ID        string
 	Nickname  string
 	Name      string
 	Birthdate string
@@ -19,7 +19,7 @@ func (p *Person) StackString() string {
 }
 
 func BuildPerson(
-	id uuid.UUID,
+	id string,
 	nickname string,
 	name string,
 	birthdate string,
@@ -41,7 +41,7 @@ func NewPerson(
 	stack []string,
 ) *Person {
 	return &Person{
-		ID:        uuid.New(),
+		ID:        uuid.NewString(),
 		Nickname:  nickname,
 		Name:      name,
 		Birthdate: birthdate,
