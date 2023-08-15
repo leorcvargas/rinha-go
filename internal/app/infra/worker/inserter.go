@@ -19,35 +19,34 @@ type Inserter struct {
 	insertChan chan people.Person
 	db         *sql.DB
 	cache      *peopledb.PeopleDbCache
-	batch      []people.Person
 }
 
 func (i *Inserter) Run() {
+	var batch []people.Person
+
+	tick := time.Tick(5 * time.Second)
+
 	for {
 		select {
 		case person := <-i.insertChan:
-			i.batch = append(i.batch, person)
+			batch = append(batch, person)
 
-		case <-time.Tick(5 * time.Second):
-			if len(i.batch) > 0 {
-				i.processBatch()
-				i.clearBatch()
+		case <-tick:
+			if len(batch) > 0 {
+				i.processBatch(batch)
+				batch = make([]people.Person, 0)
 			}
 		}
 	}
 }
 
-func (i *Inserter) clearBatch() {
-	i.batch = make([]people.Person, 0)
-}
-
-func (i *Inserter) processBatch() error {
-	err := i.insertBatch()
+func (i *Inserter) processBatch(batch []people.Person) error {
+	err := i.insertBatch(batch)
 	if err != nil {
 		return err
 	}
 
-	payload, err := json.Marshal(i.batch)
+	payload, err := json.Marshal(batch)
 	if err != nil {
 		log.Printf("Error marshalling batch: %v", err)
 		return err
@@ -62,13 +61,13 @@ func (i *Inserter) processBatch() error {
 	return nil
 }
 
-func (i *Inserter) insertBatch() error {
-	batchLength := len(i.batch)
+func (i *Inserter) insertBatch(batch []people.Person) error {
+	batchLength := len(batch)
 
 	valueStrings := make([]string, batchLength, batchLength)
 	valueArgs := make([]interface{}, batchLength*5, batchLength*5)
 
-	for i, person := range i.batch {
+	for i, person := range batch {
 		if person.ID == uuid.Nil {
 			continue
 		}
@@ -108,6 +107,5 @@ func NewInserter(
 		insertChan: insertChan,
 		db:         db,
 		cache:      cache,
-		batch:      make([]people.Person, 0),
 	}
 }
