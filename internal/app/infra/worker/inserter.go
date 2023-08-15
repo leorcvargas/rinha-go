@@ -32,7 +32,7 @@ func (i *Inserter) Run() {
 			batch = append(batch, person)
 
 		case <-time.Tick(5 * time.Second):
-			if len(batch) > 0 {
+			if len(batch) != 0 {
 				i.processBatch(batch)
 				batch = i.makeEmptyBatch()
 			}
