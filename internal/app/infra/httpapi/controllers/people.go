@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
@@ -43,11 +42,11 @@ func (c *CreatePersonRequest) Validate() error {
 }
 
 type PersonResponse struct {
-	ID        uuid.UUID `json:"id"`
-	Nickname  string    `json:"apelido"`
-	Name      string    `json:"nome"`
-	Birthdate string    `json:"nascimento"`
-	Stack     []string  `json:"stack"`
+	ID        string   `json:"id"`
+	Nickname  string   `json:"apelido"`
+	Name      string   `json:"nome"`
+	Birthdate string   `json:"nascimento"`
+	Stack     []string `json:"stack"`
 }
 
 type PeopleController struct {
@@ -135,7 +134,7 @@ func (p *PeopleController) Create(c *gin.Context) {
 		return
 	}
 
-	c.Header("Location", "/pessoas/"+person.ID.String())
+	c.Header("Location", "/pessoas/"+person.ID)
 
 	response := mapPersonResponse(person)
 

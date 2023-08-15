@@ -1,7 +1,6 @@
 package peopledb_test
 
 import (
-	"log"
 	"testing"
 
 	"github.com/go-faker/faker/v4"
@@ -10,8 +9,6 @@ import (
 )
 
 func BenchmarkSearch(b *testing.B) {
-	log.Println("Initializing database")
-
 	sampleSize := 50000
 
 	var fakePeople []people.Person
@@ -47,7 +44,6 @@ func BenchmarkSearch(b *testing.B) {
 		}
 	}
 
-	log.Println("Finished initializing database")
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

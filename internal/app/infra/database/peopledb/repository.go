@@ -26,7 +26,7 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	}
 
 	p.cache.SetNickname(person.Nickname)
-	p.cache.Set(person.ID.String(), person)
+	p.cache.Set(person.ID, person)
 
 	p.insertChan <- *person
 

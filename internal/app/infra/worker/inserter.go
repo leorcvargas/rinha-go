@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
@@ -68,7 +67,7 @@ func (i *Inserter) insertBatch(batch []people.Person) error {
 	valueArgs := make([]interface{}, batchLength*5, batchLength*5)
 
 	for i, person := range batch {
-		if person.ID == uuid.Nil {
+		if person.ID == "" {
 			continue
 		}
 
