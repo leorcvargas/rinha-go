@@ -77,7 +77,12 @@ func (m *MemDb) Search(term string) ([]people.Person, error) {
 	}
 
 	var people []people.Person
+
 	for {
+		if len(people) >= 50 {
+			break
+		}
+
 		raw := it.Next()
 		if raw == nil {
 			break
