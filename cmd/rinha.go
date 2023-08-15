@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/httpapi"
@@ -17,6 +18,8 @@ import (
 )
 
 func main() {
+	uuid.EnableRandPool()
+
 	app := fx.New(
 		controllers.Module,
 		routers.Module,
