@@ -2,7 +2,9 @@ package peopledb
 
 import (
 	"database/sql"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/go-redis/v9"
@@ -71,6 +73,13 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+	now := time.Now()
+	defer func() {
+		elapsed := time.Since(now)
+
+		log.Println("search took ", elapsed.String())
+	}()
+
 	return p.memDb.Search(term)
 }
 
