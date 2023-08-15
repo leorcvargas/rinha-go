@@ -67,8 +67,8 @@ func (i *Inserter) processBatch() error {
 func (i *Inserter) insertBatch() error {
 	batchLength := len(i.batch)
 
-	valueStrings := make([]string, 0, batchLength)
-	valueArgs := make([]interface{}, 0, batchLength*5)
+	valueStrings := make([]string, batchLength, batchLength)
+	valueArgs := make([]interface{}, batchLength*5, batchLength*5)
 
 	for i, person := range i.batch {
 		if person.ID == uuid.Nil {
