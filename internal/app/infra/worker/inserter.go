@@ -42,7 +42,7 @@ func (i *Inserter) Run() {
 }
 
 func (i *Inserter) clearBatch() {
-	i.batch = make([]people.Person, 0, batchMaxSize)
+	i.batch = make([]people.Person, 0)
 }
 
 func (i *Inserter) processBatch() error {
@@ -67,8 +67,8 @@ func (i *Inserter) processBatch() error {
 }
 
 func (i *Inserter) insertBatch() error {
-	valueStrings := make([]string, 0, len(i.batch))
-	valueArgs := make([]interface{}, 0, len(i.batch)*5)
+	valueStrings := make([]string, 0)
+	valueArgs := make([]interface{}, 0)
 
 	for i, person := range i.batch {
 		if person.ID == uuid.Nil {
@@ -110,6 +110,6 @@ func NewInserter(
 		insertChan: insertChan,
 		db:         db,
 		cache:      cache,
-		batch:      make([]people.Person, 0, batchMaxSize),
+		batch:      make([]people.Person, 0),
 	}
 }
