@@ -54,7 +54,6 @@ func (i *Inserter) processBatch(batch []people.Person) {
 		return
 	}
 
-	log.Println("Publishing the last inserted batch")
 	i.cache.Cache().Publish(
 		context.Background(),
 		pubsub.EventPersonInsert,

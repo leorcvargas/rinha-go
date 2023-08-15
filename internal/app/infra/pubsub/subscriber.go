@@ -3,7 +3,6 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"log"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
@@ -21,7 +20,6 @@ func (p *PersonInsertSubscriber) Subscribe() {
 	ch := sub.Channel()
 
 	for msg := range ch {
-		log.Println("Message received: ", msg.Payload)
 		var people []people.Person
 
 		err := json.Unmarshal([]byte(msg.Payload), &people)
