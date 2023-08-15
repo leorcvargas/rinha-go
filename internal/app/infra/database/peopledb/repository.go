@@ -12,8 +12,7 @@ type PersonRepository struct {
 	db         *sql.DB
 	cache      *PeopleDbCache
 	insertChan chan people.Person
-	// memDb      *MemDb
-	mem2 *Mem2
+	mem2       *Mem2
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
