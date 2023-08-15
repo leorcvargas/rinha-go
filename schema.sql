@@ -4,5 +4,5 @@ CREATE TABLE
         nickname varchar(32) PRIMARY KEY NOT NULL,
         "name" varchar(100) NOT NULL,
         birthdate date NULL,
-        stack text NULL,
+        stack text NULL
     );
