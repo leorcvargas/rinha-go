@@ -29,12 +29,10 @@ func (i *Inserter) Run() {
 			i.batch = append(i.batch, person)
 
 		case <-time.Tick(5 * time.Second):
-			if len(i.batch) == 0 {
-				continue
+			if len(i.batch) > 0 {
+				i.processBatch()
+				i.clearBatch()
 			}
-
-			i.processBatch()
-			i.clearBatch()
 		}
 	}
 }
