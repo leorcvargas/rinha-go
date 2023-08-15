@@ -3,8 +3,6 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"time"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
@@ -22,7 +20,6 @@ func (p *PersonInsertSubscriber) Subscribe() {
 	ch := sub.Channel()
 
 	for msg := range ch {
-		now := time.Now()
 		// memory := arena.NewArena()
 
 		// people := arena.MakeSlice[people.Person](memory, 0, 50)
@@ -35,7 +32,6 @@ func (p *PersonInsertSubscriber) Subscribe() {
 		}
 
 		p.memDb.BulkInsert(people)
-		log.Printf("memdb synced in %s, message size %d", time.Since(now), len(people))
 	}
 }
 

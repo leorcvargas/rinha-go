@@ -45,11 +45,6 @@ func (i *Inserter) Run() {
 }
 
 func (i *Inserter) processBatch(batch []people.Person) error {
-	now := time.Now()
-	defer func() {
-		log.Printf("Batch processed with len %d in %v", len(batch), time.Since(now))
-	}()
-
 	err := i.insertBatch(batch)
 	if err != nil {
 		return err
