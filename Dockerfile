@@ -21,6 +21,6 @@ COPY --from=builder /app/bin/rinha .
 
 ENV GIN_MODE release
 ENV GOGC 12300
-ENV GOMAXPROCS 16
+ENV GOMAXPROCS 8
 
 CMD ["./rinha"]
