@@ -45,13 +45,16 @@ func (*Inserter) makeEmptyBatch() []people.Person {
 	return make([]people.Person, 0, batchSize)
 }
 
-func (i *Inserter) processBatch(batch []people.Person) {
-	i.insertBatch(batch)
+func (i *Inserter) processBatch(batch []people.Person) error {
+	err := i.insertBatch(batch)
+	if err != nil {
+		return err
+	}
 
 	payload, err := json.Marshal(batch)
 	if err != nil {
 		log.Printf("Error marshalling batch: %v", err)
-		return
+		return err
 	}
 
 	i.cache.Cache().Publish(
@@ -59,9 +62,11 @@ func (i *Inserter) processBatch(batch []people.Person) {
 		pubsub.EventPersonInsert,
 		payload,
 	)
+
+	return nil
 }
 
-func (i *Inserter) insertBatch(batch []people.Person) {
+func (i *Inserter) insertBatch(batch []people.Person) error {
 	memory := arena.NewArena()
 	defer memory.Free()
 
@@ -109,7 +114,10 @@ func (i *Inserter) insertBatch(batch []people.Person) {
 	_, err := i.db.Exec(stmt, valueArgs...)
 	if err != nil {
 		log.Printf("Error inserting batch: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func NewInserter(
