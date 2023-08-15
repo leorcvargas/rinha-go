@@ -22,7 +22,7 @@ type Inserter struct {
 }
 
 func (i *Inserter) Run() {
-	batchSize := 20
+	batchSize := 5
 
 	batch := make([]people.Person, 0)
 
