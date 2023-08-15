@@ -71,53 +71,54 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	var result []people.Person
+	return p.memDb.Search(term)
+	// var result []people.Person
 
-	result, err := p.searchFts(term)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		return result, nil
-	}
+	// result, err := p.searchFts(term)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if len(result) > 0 {
+	// 	return result, nil
+	// }
 
-	result, err = p.searchTrigram(term)
-	if err != nil {
-		return nil, err
-	}
+	// result, err = p.searchTrigram(term)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return result, nil
+	// return result, nil
 }
 
-func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
-	rows, err := p.db.Query(
-		SearchPeopleFtsQuery,
-		term,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+// func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
+// 	rows, err := p.db.Query(
+// 		SearchPeopleFtsQuery,
+// 		term,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
 
-	result, err := mapSearchResult(rows)
-	if err != nil {
-		return nil, err
-	}
+// 	result, err := mapSearchResult(rows)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-	rows, err := p.db.Query(
-		SearchPeopleTrgmQuery,
-		term,
-	)
-	if err != nil {
-		return nil, err
-	}
+// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+// 	rows, err := p.db.Query(
+// 		SearchPeopleTrgmQuery,
+// 		term,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return mapSearchResult(rows)
-}
+// 	return mapSearchResult(rows)
+// }
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
@@ -159,10 +160,7 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, memDb *MemDb) people.Repository {
-	insertChan := make(chan people.Person)
-	go Worker(insertChan, db)
-
+func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, memDb *MemDb, insertChan chan people.Person) people.Repository {
 	return &PersonRepository{
 		db:         db,
 		cache:      cache,

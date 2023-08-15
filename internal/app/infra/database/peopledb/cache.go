@@ -15,6 +15,10 @@ type PeopleDbCache struct {
 	cache *redis.Client
 }
 
+func (p *PeopleDbCache) Cache() *redis.Client {
+	return p.cache
+}
+
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	item, err := p.cache.Get(ctx, key).Result()
 	if err != nil {
