@@ -15,7 +15,7 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
-const batchSize = 10
+const batchSize = 50
 
 type Inserter struct {
 	insertChan chan people.Person
@@ -24,8 +24,6 @@ type Inserter struct {
 }
 
 func (i *Inserter) Run() {
-	batchSize := 5
-
 	batch := i.makeEmptyBatch()
 
 	for {
