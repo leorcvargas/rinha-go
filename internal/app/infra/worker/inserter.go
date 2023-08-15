@@ -22,7 +22,7 @@ type Inserter struct {
 
 func (i *Inserter) Run() {
 	var batch []people.Person
-	batchLimitSize := 50
+	batchLimitSize := 250
 
 	tick := time.Tick(5 * time.Second)
 

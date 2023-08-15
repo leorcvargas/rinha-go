@@ -7,7 +7,6 @@ toolchain go1.21.0
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-faker/faker/v4 v4.1.1
-	github.com/go-playground/validator/v10 v10.15.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/lib/pq v1.10.9
@@ -25,6 +24,7 @@ require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator/v10 v10.15.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
