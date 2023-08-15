@@ -27,9 +27,7 @@ func (p *PersonInsertSubscriber) Subscribe() {
 			panic(err)
 		}
 
-		for _, person := range people {
-			p.memDb.Insert(person)
-		}
+		p.memDb.BulkInsert(people)
 	}
 }
 

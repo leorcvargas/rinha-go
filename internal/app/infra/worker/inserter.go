@@ -15,6 +15,8 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
+const batchSize = 10
+
 type Inserter struct {
 	insertChan chan people.Person
 	db         *sql.DB
@@ -24,7 +26,7 @@ type Inserter struct {
 func (i *Inserter) Run() {
 	batchSize := 5
 
-	batch := make([]people.Person, 0)
+	batch := i.makeEmptyBatch()
 
 	for {
 		select {
@@ -33,16 +35,20 @@ func (i *Inserter) Run() {
 
 			if len(batch) == batchSize {
 				i.processBatch(batch)
-				batch = make([]people.Person, 0)
+				batch = i.makeEmptyBatch()
 			}
 
-		case <-time.Tick(5 * time.Second):
+		case <-time.Tick(10 * time.Second):
 			if len(batch) > 0 {
 				i.processBatch(batch)
-				batch = make([]people.Person, 0)
+				batch = i.makeEmptyBatch()
 			}
 		}
 	}
+}
+
+func (*Inserter) makeEmptyBatch() []people.Person {
+	return make([]people.Person, 0, batchSize)
 }
 
 func (i *Inserter) processBatch(batch []people.Person) {

@@ -44,6 +44,29 @@ func (m *MemDb) Insert(person people.Person) error {
 	return nil
 }
 
+func (m *MemDb) BulkInsert(people []people.Person) error {
+	txn := m.db.Txn(true)
+	defer txn.Abort()
+
+	for _, person := range people {
+		key := person.Nickname + " " + person.Name + " " + person.StackString()
+		key = strings.ToLower(key)
+		personMem := PersonMem{
+			Key:    key,
+			Person: person,
+		}
+
+		err := txn.Insert("people", personMem)
+		if err != nil {
+			return err
+		}
+	}
+
+	txn.Commit()
+
+	return nil
+}
+
 func (m *MemDb) Search(term string) ([]people.Person, error) {
 	txn := m.db.Txn(false)
 	defer txn.Abort()
