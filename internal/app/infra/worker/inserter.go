@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"arena"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -67,14 +66,14 @@ func (i *Inserter) processBatch(batch []people.Person) error {
 }
 
 func (i *Inserter) insertBatch(batch []people.Person) error {
-	memory := arena.NewArena()
-	defer memory.Free()
+	// memory := arena.NewArena()
+	// defer memory.Free()
 
-	valueStrings := arena.MakeSlice[string](memory, 0, len(batch))
-	valueArgs := arena.MakeSlice[interface{}](memory, 0, len(batch)*5)
+	// valueStrings := arena.MakeSlice[string](memory, 0, len(batch))
+	// valueArgs := arena.MakeSlice[interface{}](memory, 0, len(batch)*5)
 
-	// valueStrings := make([]string, 0, len(batch))
-	// valueArgs := make([]interface{}, 0, len(batch)*5)
+	valueStrings := make([]string, 0, len(batch))
+	valueArgs := make([]interface{}, 0, len(batch)*5)
 
 	for i, person := range batch {
 		if person.ID == uuid.Nil {
