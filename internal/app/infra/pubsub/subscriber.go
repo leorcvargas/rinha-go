@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"arena"
 	"context"
 	"encoding/json"
 
@@ -20,7 +21,11 @@ func (p *PersonInsertSubscriber) Subscribe() {
 	ch := sub.Channel()
 
 	for msg := range ch {
-		var people []people.Person
+		memory := arena.NewArena()
+
+		people := arena.MakeSlice[people.Person](memory, 0, 50)
+
+		// var people []people.Person
 
 		err := json.Unmarshal([]byte(msg.Payload), &people)
 		if err != nil {

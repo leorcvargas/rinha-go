@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"arena"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -30,11 +31,6 @@ func (i *Inserter) Run() {
 		select {
 		case person := <-i.insertChan:
 			batch = append(batch, person)
-
-			if len(batch) == batchSize {
-				i.processBatch(batch)
-				batch = i.makeEmptyBatch()
-			}
 
 		case <-time.Tick(5 * time.Second):
 			if len(batch) > 0 {
@@ -66,26 +62,39 @@ func (i *Inserter) processBatch(batch []people.Person) {
 }
 
 func (i *Inserter) insertBatch(batch []people.Person) {
-	valueStrings := make([]string, 0, len(batch))
-	valueArgs := make([]interface{}, 0, len(batch)*5)
+	memory := arena.NewArena()
+	defer memory.Free()
+
+	valueStrings := arena.MakeSlice[string](memory, 0, len(batch))
+	valueArgs := arena.MakeSlice[interface{}](memory, 0, len(batch)*5)
+
+	// valueStrings := make([]string, 0, len(batch))
+	// valueArgs := make([]interface{}, 0, len(batch)*5)
 
 	for i, person := range batch {
 		if person.ID == uuid.Nil {
 			continue
 		}
 
-		valueStrings = append(
-			valueStrings,
-			fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5),
-		)
-		valueArgs = append(
-			valueArgs,
-			person.ID,
-			person.Nickname,
-			person.Name,
-			person.Birthdate,
-			strings.Join(person.Stack, ","),
-		)
+		valueStrings[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5)
+		valueArgs[i*5+1] = person.ID
+		valueArgs[i*5+2] = person.Nickname
+		valueArgs[i*5+3] = person.Name
+		valueArgs[i*5+4] = person.Birthdate
+		valueArgs[i*5+5] = strings.Join(person.Stack, ",")
+
+		// valueStrings = append(
+		// 	valueStrings,
+		// 	fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5),
+		// )
+		// valueArgs = append(
+		// 	valueArgs,
+		// 	person.ID,
+		// 	person.Nickname,
+		// 	person.Name,
+		// 	person.Birthdate,
+		// 	strings.Join(person.Stack, ","),
+		// )
 	}
 
 	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
