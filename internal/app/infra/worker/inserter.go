@@ -15,44 +15,43 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
-const batchMaxSize = 5000
+const batchMaxSize = 20
 
 type Inserter struct {
 	insertChan chan people.Person
 	db         *sql.DB
 	cache      *peopledb.PeopleDbCache
+	batch      []people.Person
 }
 
 func (i *Inserter) Run() {
-	batch := i.makeEmptyBatch()
-
 	for {
 		select {
 		case person := <-i.insertChan:
-			batch = append(batch, person)
+			i.batch = append(i.batch, person)
+			if len(i.batch) >= batchMaxSize {
+				i.processBatch()
+				i.clearBatch()
+			}
 
 		case <-time.Tick(5 * time.Second):
-			i.processBatch(batch)
-			batch = i.makeEmptyBatch()
+			i.processBatch()
+			i.clearBatch()
 		}
 	}
 }
 
-func (*Inserter) makeEmptyBatch() []people.Person {
-	return make([]people.Person, 0, batchMaxSize)
+func (i *Inserter) clearBatch() {
+	i.batch = make([]people.Person, 0, batchMaxSize)
 }
 
-func (i *Inserter) processBatch(batch []people.Person) error {
-	if len(batch) == 0 {
-		return nil
-	}
-
-	err := i.insertBatch(batch)
+func (i *Inserter) processBatch() error {
+	err := i.insertBatch()
 	if err != nil {
 		return err
 	}
 
-	payload, err := json.Marshal(batch)
+	payload, err := json.Marshal(i.batch)
 	if err != nil {
 		log.Printf("Error marshalling batch: %v", err)
 		return err
@@ -67,17 +66,11 @@ func (i *Inserter) processBatch(batch []people.Person) error {
 	return nil
 }
 
-func (i *Inserter) insertBatch(batch []people.Person) error {
-	// memory := arena.NewArena()
-	// defer memory.Free()
+func (i *Inserter) insertBatch() error {
+	valueStrings := make([]string, 0, len(i.batch))
+	valueArgs := make([]interface{}, 0, len(i.batch)*5)
 
-	// valueStrings := arena.MakeSlice[string](memory, 0, len(batch))
-	// valueArgs := arena.MakeSlice[interface{}](memory, 0, len(batch)*5)
-
-	valueStrings := make([]string, 0, len(batch))
-	valueArgs := make([]interface{}, 0, len(batch)*5)
-
-	for i, person := range batch {
+	for i, person := range i.batch {
 		if person.ID == uuid.Nil {
 			continue
 		}
@@ -88,19 +81,6 @@ func (i *Inserter) insertBatch(batch []people.Person) error {
 		valueArgs[i*5+3] = person.Name
 		valueArgs[i*5+4] = person.Birthdate
 		valueArgs[i*5+5] = strings.Join(person.Stack, ",")
-
-		// valueStrings = append(
-		// 	valueStrings,
-		// 	fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5),
-		// )
-		// valueArgs = append(
-		// 	valueArgs,
-		// 	person.ID,
-		// 	person.Nickname,
-		// 	person.Name,
-		// 	person.Birthdate,
-		// 	strings.Join(person.Stack, ","),
-		// )
 	}
 
 	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
@@ -130,5 +110,6 @@ func NewInserter(
 		insertChan: insertChan,
 		db:         db,
 		cache:      cache,
+		batch:      make([]people.Person, 0, batchMaxSize),
 	}
 }
