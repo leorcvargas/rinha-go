@@ -22,6 +22,7 @@ type Inserter struct {
 
 func (i *Inserter) Run() {
 	var batch []people.Person
+	batchLimitSize := 50
 
 	tick := time.Tick(5 * time.Second)
 
@@ -29,6 +30,10 @@ func (i *Inserter) Run() {
 		select {
 		case person := <-i.insertChan:
 			batch = append(batch, person)
+			if len(batch) >= batchLimitSize {
+				i.processBatch(batch)
+				batch = make([]people.Person, 0)
+			}
 
 		case <-tick:
 			if len(batch) > 0 {
