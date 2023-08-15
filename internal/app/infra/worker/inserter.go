@@ -15,8 +15,6 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
-const batchMaxSize = 20
-
 type Inserter struct {
 	insertChan chan people.Person
 	db         *sql.DB
@@ -29,10 +27,6 @@ func (i *Inserter) Run() {
 		select {
 		case person := <-i.insertChan:
 			i.batch = append(i.batch, person)
-			if len(i.batch) >= batchMaxSize {
-				i.processBatch()
-				i.clearBatch()
-			}
 
 		case <-time.Tick(5 * time.Second):
 			if len(i.batch) == 0 {
@@ -72,8 +66,9 @@ func (i *Inserter) processBatch() error {
 
 func (i *Inserter) insertBatch() error {
 	batchLength := len(i.batch)
-	valueStrings := make([]string, batchLength, batchLength)
-	valueArgs := make([]interface{}, batchLength*5, batchLength*5)
+
+	valueStrings := make([]string, 0, batchLength)
+	valueArgs := make([]interface{}, 0, batchLength*5)
 
 	for i, person := range i.batch {
 		if person.ID == uuid.Nil {
