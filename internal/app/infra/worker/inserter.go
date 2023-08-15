@@ -32,10 +32,8 @@ func (i *Inserter) Run() {
 			batch = append(batch, person)
 
 		case <-time.Tick(5 * time.Second):
-			if len(batch) != 0 {
-				i.processBatch(batch)
-				batch = i.makeEmptyBatch()
-			}
+			i.processBatch(batch)
+			batch = i.makeEmptyBatch()
 		}
 	}
 }
@@ -45,6 +43,10 @@ func (*Inserter) makeEmptyBatch() []people.Person {
 }
 
 func (i *Inserter) processBatch(batch []people.Person) error {
+	if len(batch) == 0 {
+		return nil
+	}
+
 	err := i.insertBatch(batch)
 	if err != nil {
 		return err
