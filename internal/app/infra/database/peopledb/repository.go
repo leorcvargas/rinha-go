@@ -72,53 +72,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	return p.memDb.Search(term)
-	// var result []people.Person
-
-	// result, err := p.searchFts(term)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if len(result) > 0 {
-	// 	return result, nil
-	// }
-
-	// result, err = p.searchTrigram(term)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return result, nil
 }
-
-// func (p *PersonRepository) searchFts(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		SearchPeopleFtsQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
-
-// 	result, err := mapSearchResult(rows)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return result, nil
-// }
-
-// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		SearchPeopleTrgmQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return mapSearchResult(rows)
-// }
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
