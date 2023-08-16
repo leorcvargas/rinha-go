@@ -22,7 +22,7 @@ services:
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      interval: 15s
       timeout: 25s
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
 
