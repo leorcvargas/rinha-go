@@ -69,7 +69,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.35"
+          cpus: "0.3"
           memory: "0.1GB"
 
   cache:
@@ -80,7 +80,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.1"
+          cpus: "0.15"
           memory: "0.5GB"
     command: ["redis-server", "--save", '""', "--appendonly", "no"]
 
