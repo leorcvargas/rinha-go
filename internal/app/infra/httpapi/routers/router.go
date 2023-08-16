@@ -15,7 +15,6 @@ func MakeRouter(
 	r := fiber.New(fiber.Config{
 		AppName:       "rinha-go by @leorcvargas",
 		CaseSensitive: true,
-		Prefork:       true,
 		JSONEncoder:   sonic.Marshal,
 		JSONDecoder:   sonic.Unmarshal,
 	})

@@ -21,8 +21,6 @@ EXPOSE 8080
 COPY --from=builder /app/bin/rinha .
 
 ENV GIN_MODE release
-ENV GOGC 12300
-
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+ENV GOGC 300
 
 CMD /rinha
