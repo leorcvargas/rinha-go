@@ -14,6 +14,7 @@ RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM alpine:3.14.10
 
+RUN apk add dumb-init
 
 EXPOSE 8080
 
@@ -22,4 +23,6 @@ COPY --from=builder /app/bin/rinha .
 ENV GIN_MODE release
 ENV GOGC 12300
 
-CMD ["sh", "-c", "/rinha"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD /rinha
