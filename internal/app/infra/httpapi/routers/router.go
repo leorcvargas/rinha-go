@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type Router interface {
@@ -10,9 +10,11 @@ type Router interface {
 
 func MakeRouter(
 	peopleRouter *PeopleRouter,
-) *gin.Engine {
-	r := gin.New()
-	r.Use(gin.Recovery())
+) *fiber.App {
+	r := fiber.New(fiber.Config{
+		CaseSensitive: true,
+		AppName:       "rinha-go by @leorcvargas",
+	})
 
 	peopleRouter.Load(r)
 

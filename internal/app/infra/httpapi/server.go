@@ -4,31 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 )
 
-func NewServer(lifecycle fx.Lifecycle, router *gin.Engine, _ *sql.DB) *http.Server {
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
-	}
-
+func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.Server {
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
-				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Println("starting the server...")
+				if err := router.Listen(":8080"); err != nil {
 					log.Fatalf("error starting the server: %s\n", err)
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			return srv.Shutdown(ctx)
+			return router.ShutdownWithContext(ctx)
 		},
 	})
 
-	return srv
+	return router.Server()
 }

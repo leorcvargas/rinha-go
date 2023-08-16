@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -12,6 +11,7 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/httpapi/routers"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/worker"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 
 	_ "go.uber.org/automaxprocs"
@@ -36,7 +36,8 @@ func main() {
 			log.Println("Starting pubsub.Subscriber")
 			go subscriber.Subscribe()
 		}),
-		fx.Invoke(func(*http.Server) {}),
+		fx.Invoke(func(*fasthttp.Server) {}),
 	)
+
 	app.Run()
 }

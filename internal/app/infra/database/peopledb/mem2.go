@@ -53,8 +53,15 @@ func (m *Mem2) Search(query string) []people.Person {
 	result := make([]people.Person, 0)
 
 	size := len(m.list)
-	limit := 50
 
+	if size == 1 {
+		if strings.Contains(m.list[0].Key, query) {
+			result = append(result, m.list[0].Person)
+		}
+		return result
+	}
+
+	limit := 50
 	front := 0
 	back := size - 1
 
