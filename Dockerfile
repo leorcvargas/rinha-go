@@ -21,6 +21,6 @@ EXPOSE 8080
 COPY --from=builder /app/bin/rinha .
 
 ENV GIN_MODE release
-ENV GOGC 300
+ENV GOGC 12300
 
 CMD /rinha
