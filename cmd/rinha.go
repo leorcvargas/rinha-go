@@ -36,6 +36,7 @@ func main() {
 			go subscriber.Subscribe()
 		}),
 		fx.Invoke(func(*fasthttp.Server) {}),
+		fx.NopLogger,
 	)
 
 	app.Run()
