@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 )
@@ -26,8 +25,6 @@ func (p *PersonInsertSubscriber) Subscribe() {
 		// people := arena.MakeSlice[people.Person](memory, 0, 50)
 
 		var people []people.Person
-
-		log.Infof("sub payload %v", msg)
 
 		err := json.Unmarshal([]byte(msg.Payload), &people)
 		if err != nil {

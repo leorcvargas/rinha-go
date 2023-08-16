@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
@@ -82,7 +81,6 @@ func (p *PeopleController) Search(c *fiber.Ctx) error {
 	}
 
 	response := make([]PersonResponse, 0, len(people))
-	log.Infof("people: %+v", people)
 
 	for _, person := range people {
 		response = append(response, mapPersonResponse(&person))
@@ -139,8 +137,6 @@ func (p *PeopleController) Create(c *fiber.Ctx) error {
 				"error": err.Error(),
 			})
 		}
-
-		log.Error(err)
 
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "internal server error",
