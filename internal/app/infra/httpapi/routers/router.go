@@ -1,6 +1,8 @@
 package routers
 
 import (
+	"os"
+
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 )
@@ -12,12 +14,17 @@ type Router interface {
 func MakeRouter(
 	peopleRouter *PeopleRouter,
 ) *fiber.App {
-	r := fiber.New(fiber.Config{
+	cfg := fiber.Config{
 		AppName:       "rinha-go by @leorcvargas",
 		CaseSensitive: true,
-		JSONEncoder:   sonic.Marshal,
-		JSONDecoder:   sonic.Unmarshal,
-	})
+	}
+
+	if os.Getenv("ENABLE_SONIC_JSON") == "1" {
+		cfg.JSONEncoder = sonic.Marshal
+		cfg.JSONDecoder = sonic.Unmarshal
+	}
+
+	r := fiber.New()
 
 	peopleRouter.Load(r)
 

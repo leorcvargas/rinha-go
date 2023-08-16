@@ -30,6 +30,8 @@ services:
     build: .
     restart: always
     hostname: api1
+    environment:
+      - ENABLE_SONIC_JSON=1
     depends_on:
       db:
         condition: service_healthy
@@ -45,6 +47,8 @@ services:
     build: .
     restart: always
     hostname: api2
+    environment:
+      - ENABLE_SONIC_JSON=1
     depends_on:
       db:
         condition: service_healthy
