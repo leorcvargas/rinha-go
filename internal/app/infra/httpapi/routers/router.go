@@ -13,8 +13,9 @@ func MakeRouter(
 	peopleRouter *PeopleRouter,
 ) *fiber.App {
 	r := fiber.New(fiber.Config{
-		CaseSensitive: true,
 		AppName:       "rinha-go by @leorcvargas",
+		CaseSensitive: true,
+		Prefork:       true,
 		JSONEncoder:   sonic.Marshal,
 		JSONDecoder:   sonic.Unmarshal,
 	})
