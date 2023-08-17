@@ -21,7 +21,7 @@ type Inserter struct {
 	cache      *peopledb.PeopleDbCache
 }
 
-const maxBatchSize = 250
+const maxBatchSize = 100
 
 func (i *Inserter) Run() {
 	a := arena.NewArena()
@@ -52,7 +52,7 @@ func (i *Inserter) Run() {
 				i.processBatch(batch, batchLen)
 				currentProcessedCount += batchLen
 
-				if currentProcessedCount >= 100 {
+				if currentProcessedCount >= maxBatchSize {
 					a.Free()
 					a = arena.NewArena()
 					currentProcessedCount = 0
