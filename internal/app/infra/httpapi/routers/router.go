@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 type Router interface {
@@ -20,6 +21,7 @@ func MakeRouter(
 	}
 
 	if os.Getenv("ENABLE_SONIC_JSON") == "1" {
+		log.Info("Loading Sonic JSON into the router")
 		cfg.JSONEncoder = sonic.Marshal
 		cfg.JSONDecoder = sonic.Unmarshal
 	}
