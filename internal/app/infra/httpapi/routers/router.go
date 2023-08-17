@@ -26,7 +26,7 @@ func MakeRouter(
 		cfg.JSONDecoder = sonic.Unmarshal
 	}
 
-	r := fiber.New()
+	r := fiber.New(cfg)
 
 	peopleRouter.Load(r)
 
