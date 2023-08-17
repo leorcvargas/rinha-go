@@ -3,6 +3,7 @@ package peopledb
 import (
 	"database/sql"
 	"strings"
+	"sync"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/go-redis/v9"
@@ -25,10 +26,20 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 		return nil, people.ErrNicknameTaken
 	}
 
-	go p.cache.Set(person.ID, person)
-	p.cache.SetNickname(person.Nickname)
+	var wg sync.WaitGroup
+
+	go func() {
+		wg.Add(1)
+		p.cache.Set(person.ID, person)
+	}()
+	go func() {
+		wg.Add(1)
+		p.cache.SetNickname(person.Nickname)
+	}()
 
 	p.insertChan <- *person
+
+	wg.Wait()
 
 	return person, nil
 }
