@@ -29,7 +29,7 @@ func (i *Inserter) Run() {
 	batch := arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
 	batchLen := 0
 
-	tickProcess := time.Tick(5 * time.Second)
+	tickProcess := time.Tick(10 * time.Second)
 	tickClear := time.Tick(3 * time.Minute)
 
 	for {
