@@ -45,7 +45,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
+          cpus: "0.35"
           memory: "0.8GB"
 
   api2:
@@ -67,7 +67,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
+          cpus: "0.35"
           memory: "0.8GB"
 
   nginx:
@@ -94,7 +94,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
+          cpus: "0.25"
           memory: "0.5GB"
     command: ["redis-server", "--save", '""', "--appendonly", "no"]
 
@@ -104,3 +104,4 @@ volumes:
 networks:
   default:
     driver: bridge
+1
