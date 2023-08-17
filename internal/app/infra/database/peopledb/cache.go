@@ -69,10 +69,9 @@ func (p *PeopleDbCache) SetNickname(nickname string) error {
 
 func NewPeopleDbCache() *PeopleDbCache {
 	cache := redis.NewClient(&redis.Options{
-		Addr:         "cache:6379",
-		Password:     "",
-		DB:           0,
-		MinIdleConns: 10,
+		Addr:     "cache:6379",
+		Password: "",
+		DB:       0,
 	})
 
 	return &PeopleDbCache{
