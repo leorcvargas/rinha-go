@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/go-redis/v9"
 )
@@ -21,10 +20,10 @@ func (p *PeopleDbCache) Cache() *redis.Client {
 }
 
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
-	x := time.Now()
-	defer func() {
-		log.Info("Get cache time: ", time.Since(x))
-	}()
+	// x := time.Now()
+	// defer func() {
+	// 	log.Info("Get cache time: ", time.Since(x))
+	// }()
 
 	item, err := p.cache.Get(ctx, key).Result()
 	if err != nil {
@@ -41,10 +40,10 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 }
 
 func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
-	x := time.Now()
-	defer func() {
-		log.Info("GetNickname cache time: ", time.Since(x))
-	}()
+	// x := time.Now()
+	// defer func() {
+	// 	log.Info("GetNickname cache time: ", time.Since(x))
+	// }()
 
 	_, err := p.cache.Get(ctx, nickname).Result()
 	if err != nil {
@@ -59,10 +58,10 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 }
 
 func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
-	x := time.Now()
-	defer func() {
-		log.Info("Set cache time: ", time.Since(x))
-	}()
+	// x := time.Now()
+	// defer func() {
+	// 	log.Info("Set cache time: ", time.Since(x))
+	// }()
 
 	item, err := sonic.Marshal(person)
 	if err != nil {
@@ -78,10 +77,10 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 }
 
 func (p *PeopleDbCache) SetNickname(nickname string) error {
-	x := time.Now()
-	defer func() {
-		log.Info("SetNickname cache time: ", time.Since(x))
-	}()
+	// x := time.Now()
+	// defer func() {
+	// 	log.Info("SetNickname cache time: ", time.Since(x))
+	// }()
 
 	_, err := p.cache.Set(ctx, nickname, true, time.Hour).Result()
 
