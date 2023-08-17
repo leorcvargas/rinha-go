@@ -31,6 +31,9 @@ func NewPostgresDatabase() *sql.DB {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
 
+		// pg.SetMaxOpenConns(25)
+		pg.SetMaxIdleConns(10)
+
 		if err := pg.Ping(); err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
