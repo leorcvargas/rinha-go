@@ -72,7 +72,6 @@ func NewPeopleDbCache() *PeopleDbCache {
 		Addr:     "cache:6379",
 		Password: "",
 		DB:       0,
-		PoolSize: 30,
 	})
 
 	return &PeopleDbCache{
