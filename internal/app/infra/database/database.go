@@ -19,14 +19,14 @@ func NewPostgresDatabase() *sql.DB {
 
 		pg, err := sql.Open("postgres", dsn)
 		if err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			log.Fatalf("Failed to connect to database: %v", err)
 		}
 
 		pg.SetMaxOpenConns(25)
 		pg.SetMaxIdleConns(25)
 
 		if err := pg.Ping(); err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			log.Fatalf("Failed to connect to database: %v", err)
 		}
 
 		db = pg

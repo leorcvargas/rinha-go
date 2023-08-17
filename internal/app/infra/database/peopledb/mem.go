@@ -2,9 +2,9 @@ package peopledb
 
 import (
 	"errors"
-	"log"
 	"strings"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/hashicorp/go-memdb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )

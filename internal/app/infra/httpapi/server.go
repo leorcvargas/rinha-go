@@ -3,7 +3,8 @@ package httpapi
 import (
 	"context"
 	"database/sql"
-	"log"
+
+	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
@@ -14,9 +15,9 @@ func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.S
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
-				log.Println("starting the server...")
+				log.Info("Starting the server...")
 				if err := router.Listen(":8080"); err != nil {
-					log.Fatalf("error starting the server: %s\n", err)
+					log.Fatalf("Error starting the server: %s\n", err)
 				}
 			}()
 			return nil
