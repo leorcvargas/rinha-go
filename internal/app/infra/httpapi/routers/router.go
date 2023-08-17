@@ -18,7 +18,6 @@ func MakeRouter(
 	cfg := fiber.Config{
 		AppName:       "rinha-go by @leorcvargas",
 		CaseSensitive: true,
-		Prefork:       true,
 	}
 
 	if os.Getenv("ENABLE_SONIC_JSON") == "1" {
