@@ -30,7 +30,7 @@ func (i *Inserter) Run() {
 	batchLen := 0
 
 	tickProcess := time.Tick(5 * time.Second)
-	tickClear := time.Tick(30 * time.Second)
+	tickClear := time.Tick(2 * time.Minute)
 
 	for {
 		select {
