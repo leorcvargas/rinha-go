@@ -22,6 +22,6 @@ COPY --from=builder /app/bin/rinha .
 
 ENV GOGC 12300
 
-ENV GOMAXPROCS 2
+ENV GOMAXPROCS 3
 
 CMD /rinha
