@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
 	"sync"
 
 	_ "github.com/lib/pq"
@@ -15,18 +17,25 @@ var (
 
 func NewPostgresDatabase() *sql.DB {
 	once.Do(func() {
-		dsn := "host=db user=postgres password=postgres dbname=rinha port=5432 sslmode=disable"
+		dsn := fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+			os.Getenv("DB_HOST"),
+			os.Getenv("DB_USER"),
+			os.Getenv("DB_PASSWORD"),
+			os.Getenv("DB_NAME"),
+			os.Getenv("DB_PORT"),
+		)
 
 		pg, err := sql.Open("postgres", dsn)
 		if err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			log.Fatalf("Failed to connect to database: %v", err)
 		}
 
 		pg.SetMaxOpenConns(25)
 		pg.SetMaxIdleConns(25)
 
 		if err := pg.Ping(); err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			log.Fatalf("Failed to connect to database: %v", err)
 		}
 
 		db = pg
