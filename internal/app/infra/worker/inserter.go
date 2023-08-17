@@ -4,11 +4,11 @@ import (
 	"arena"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
@@ -74,7 +74,7 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	payload, err := json.Marshal(batch[:batchLength])
+	payload, err := sonic.Marshal(batch[:batchLength])
 	if err != nil {
 		log.Errorf("Error marshalling batch: %v", err)
 		return err

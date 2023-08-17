@@ -2,8 +2,8 @@ package pubsub
 
 import (
 	"context"
-	"encoding/json"
 
+	"github.com/bytedance/sonic"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 )
@@ -26,7 +26,7 @@ func (p *PersonInsertSubscriber) Subscribe() {
 
 		var people []people.Person
 
-		err := json.Unmarshal([]byte(msg.Payload), &people)
+		err := sonic.Unmarshal([]byte(msg.Payload), &people)
 		if err != nil {
 			panic(err)
 		}

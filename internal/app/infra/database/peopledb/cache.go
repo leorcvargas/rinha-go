@@ -2,9 +2,9 @@ package peopledb
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/go-redis/v9"
 )
@@ -26,7 +26,7 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	}
 
 	var person people.Person
-	err = json.Unmarshal([]byte(item), &person)
+	err = sonic.Unmarshal([]byte(item), &person)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 }
 
 func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
-	item, err := json.Marshal(person)
+	item, err := sonic.Marshal(person)
 	if err != nil {
 		return nil, err
 	}
