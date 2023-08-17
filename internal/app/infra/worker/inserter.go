@@ -28,9 +28,9 @@ func (i *Inserter) Run() {
 
 	batch := arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
 	batchLen := 0
-	currentProcessedCount := 0
 
-	tick := time.Tick(5 * time.Second)
+	tickProcess := time.Tick(5 * time.Second)
+	tickClear := time.Tick(60 * time.Second)
 
 	for {
 		select {
@@ -42,26 +42,28 @@ func (i *Inserter) Run() {
 				i.processBatch(batch, batchLen)
 				a.Free()
 				a = arena.NewArena()
-				currentProcessedCount = 0
 				batch = arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
 				batchLen = 0
 			}
 
-		case <-tick:
+		case <-tickProcess:
 			if batchLen > 0 {
 				i.processBatch(batch, batchLen)
-				currentProcessedCount += batchLen
-
-				if currentProcessedCount >= maxBatchSize {
-					a.Free()
-					a = arena.NewArena()
-					currentProcessedCount = 0
-				}
-
 				batch = arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
 				batchLen = 0
 			}
+
+		case <-tickClear:
+			if batchLen > 0 {
+				i.processBatch(batch, batchLen)
+			}
+
+			a.Free()
+			a = arena.NewArena()
+			batch = arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
+			batchLen = 0
 		}
+
 	}
 }
 
