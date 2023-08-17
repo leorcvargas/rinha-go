@@ -22,7 +22,7 @@ COPY --from=builder /app/bin/rinha .
 
 ENV GIN_MODE release
 ENV GOGC 12300
-# ENV GOMAXPROCS 2
+ENV GOMAXPROCS 2
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD /rinha
