@@ -31,10 +31,12 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	go func() {
 		wg.Add(1)
 		p.cache.Set(person.ID, person)
+		wg.Done()
 	}()
 	go func() {
 		wg.Add(1)
 		p.cache.SetNickname(person.Nickname)
+		wg.Done()
 	}()
 
 	p.insertChan <- *person
