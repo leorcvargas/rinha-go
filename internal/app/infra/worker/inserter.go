@@ -6,10 +6,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
@@ -54,6 +54,7 @@ func (i *Inserter) Run() {
 			}
 
 		case <-tickClear:
+			log.Info("Clear tick...")
 			if batchLen > 0 {
 				i.processBatch(batch, batchLen)
 			}
@@ -75,7 +76,7 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 
 	payload, err := json.Marshal(batch[:batchLength])
 	if err != nil {
-		log.Printf("Error marshalling batch: %v", err)
+		log.Errorf("Error marshalling batch: %v", err)
 		return err
 	}
 
@@ -118,7 +119,7 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 
 	_, err := i.db.Exec(stmt, valueArgs...)
 	if err != nil {
-		log.Printf("Error inserting batch: %v", err)
+		log.Errorf("Error inserting batch: %v", err)
 		return err
 	}
 
