@@ -12,18 +12,19 @@ import (
 var ctx = context.Background()
 
 type PeopleDbCache struct {
-	cache *redis.Client
+	peopleCache   *redis.Client
+	nicknameCache *redis.Client
 }
 
 func (p *PeopleDbCache) Cache() *redis.Client {
-	return p.cache
+	return p.peopleCache
 }
 
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	t := top("cache-get-nickname")
 	defer t()
 
-	item, err := p.cache.Get(ctx, key).Result()
+	item, err := p.peopleCache.Get(ctx, key).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	t := top("cache-get-nickname")
 	defer t()
 
-	_, err := p.cache.Get(ctx, nickname).Result()
+	_, err := p.nicknameCache.Get(ctx, nickname).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return false, nil
@@ -62,7 +63,7 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 		return nil, err
 	}
 
-	_, err = p.cache.Set(ctx, key, item, time.Hour).Result()
+	_, err = p.peopleCache.Set(ctx, key, item, time.Hour).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -74,19 +75,25 @@ func (p *PeopleDbCache) SetNickname(nickname string) error {
 	t := top("cache-set-nickname")
 	defer t()
 
-	_, err := p.cache.Set(ctx, nickname, true, time.Hour).Result()
+	_, err := p.nicknameCache.Set(ctx, nickname, true, time.Hour).Result()
 
 	return err
 }
 
 func NewPeopleDbCache() *PeopleDbCache {
-	cache := redis.NewClient(&redis.Options{
+	peopleCache := redis.NewClient(&redis.Options{
 		Addr:     "cache:6379",
 		Password: "",
 		DB:       0,
 	})
+	nicknameCache := redis.NewClient(&redis.Options{
+		Addr:     "cache:6379",
+		Password: "",
+		DB:       1,
+	})
 
 	return &PeopleDbCache{
-		cache: cache,
+		peopleCache:   peopleCache,
+		nicknameCache: nicknameCache,
 	}
 }
