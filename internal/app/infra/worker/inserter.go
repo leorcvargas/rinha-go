@@ -21,7 +21,7 @@ type Inserter struct {
 	cache      *peopledb.PeopleDbCache
 }
 
-const maxBatchSize = 25
+const maxBatchSize = 50
 
 func (i *Inserter) Run() {
 	a := arena.NewArena()
