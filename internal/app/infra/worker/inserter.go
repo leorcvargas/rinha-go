@@ -30,7 +30,7 @@ func (i *Inserter) Run() {
 	batchLen := 0
 	currentProcessedCount := 0
 
-	tick := time.Tick(8 * time.Second)
+	tick := time.Tick(5 * time.Second)
 
 	for {
 		select {
@@ -52,7 +52,7 @@ func (i *Inserter) Run() {
 				i.processBatch(batch, batchLen)
 				currentProcessedCount += batchLen
 
-				if currentProcessedCount >= 150 {
+				if currentProcessedCount >= 100 {
 					a.Free()
 					a = arena.NewArena()
 					currentProcessedCount = 0
