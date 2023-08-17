@@ -12,7 +12,8 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/worker"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
-	// _ "go.uber.org/automaxprocs"
+
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
