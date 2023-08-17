@@ -2,10 +2,9 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
@@ -65,57 +64,65 @@ func mapPersonResponse(person *people.Person) PersonResponse {
 	}
 }
 
-func (p *PeopleController) Search(c *gin.Context) {
+func (p *PeopleController) Search(c *fiber.Ctx) error {
 	t := c.Query("t")
 
 	if t == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing query param 't'"})
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "missing query param 't'",
+		})
 	}
 
 	people, err := p.findPeople.Search(t)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "internal server error",
+		})
 	}
 
 	response := make([]PersonResponse, 0, len(people))
+
 	for _, person := range people {
 		response = append(response, mapPersonResponse(&person))
 	}
 
-	c.JSON(http.StatusOK, response)
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-func (p *PeopleController) Get(c *gin.Context) {
-	id := c.Param("id")
+func (p *PeopleController) Get(c *fiber.Ctx) error {
+	id := c.Params("id")
 
 	person, err := p.findPeople.ByID(id)
 	if err != nil {
 		if errors.Is(err, people.ErrPersonNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": err.Error(),
+			})
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "internal server error",
+		})
 	}
 
 	response := mapPersonResponse(person)
 
-	c.JSON(http.StatusOK, response)
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-func (p *PeopleController) Create(c *gin.Context) {
+func (p *PeopleController) Create(c *fiber.Ctx) error {
 	var dto CreatePersonRequest
-	if err := c.ShouldBind(&dto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
-		return
+
+	if err := c.BodyParser(&dto); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "bad request",
+		})
 	}
 
 	if err := dto.Validate(); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
 	person, err := p.createPerson.Execute(
@@ -126,30 +133,32 @@ func (p *PeopleController) Create(c *gin.Context) {
 	)
 	if err != nil {
 		if errors.Is(err, people.ErrNicknameTaken) {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-			return
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
+				"error": err.Error(),
+			})
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "internal server error",
+		})
 	}
 
-	c.Header("Location", "/pessoas/"+person.ID)
+	c.Set("Location", "/pessoas/"+person.ID)
 
 	response := mapPersonResponse(person)
 
-	c.JSON(http.StatusCreated, response)
-	return
+	return c.Status(fiber.StatusCreated).JSON(response)
 }
 
-func (p *PeopleController) CountAll(c *gin.Context) {
+func (p *PeopleController) CountAll(c *fiber.Ctx) error {
 	result, err := p.countPeople.CountAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "internal server error",
+		})
 	}
 
-	c.JSON(http.StatusOK, result)
+	return c.Status(fiber.StatusOK).JSON(result)
 }
 
 func NewPeopleController(

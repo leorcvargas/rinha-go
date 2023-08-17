@@ -7,6 +7,8 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
+const maxMem2Items = 100000
+
 type PersonItem struct {
 	Key string
 	people.Person
@@ -50,10 +52,16 @@ func (m *Mem2) AddBatch(batch []people.Person) {
 func (m *Mem2) Search(query string) []people.Person {
 	query = strings.ToLower(query)
 
-	result := make([]people.Person, 0)
-
-	size := len(m.list)
 	limit := 50
+	size := len(m.list)
+	result := make([]people.Person, 0, limit)
+
+	if size == 1 {
+		if strings.Contains(m.list[0].Key, query) {
+			result = append(result, m.list[0].Person)
+		}
+		return result
+	}
 
 	front := 0
 	back := size - 1
@@ -84,6 +92,6 @@ func (m *Mem2) Search(query string) []people.Person {
 
 func NewMem2() *Mem2 {
 	return &Mem2{
-		list: make([]PersonItem, 0),
+		list: make([]PersonItem, 0, maxMem2Items),
 	}
 }
