@@ -21,7 +21,7 @@ type Inserter struct {
 	cache      *peopledb.PeopleDbCache
 }
 
-const maxBatchSize = 50
+const maxBatchSize = 100
 
 func (i *Inserter) Run() {
 	a := arena.NewArena()
@@ -29,7 +29,7 @@ func (i *Inserter) Run() {
 	batch := arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
 	batchLen := 0
 
-	tickProcess := time.Tick(10 * time.Second)
+	tickProcess := time.Tick(5 * time.Second)
 	tickClear := time.Tick(30 * time.Second)
 
 	for {
