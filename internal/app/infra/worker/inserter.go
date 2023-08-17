@@ -42,6 +42,7 @@ func (i *Inserter) Run() {
 				i.processBatch(batch, batchLen)
 				a.Free()
 				a = arena.NewArena()
+				currentProcessedCount = 0
 				batch = arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
 				batchLen = 0
 			}
