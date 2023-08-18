@@ -78,7 +78,11 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 }
 
 func NewPeopleDbCache() *PeopleDbCache {
-	client, err := rueidis.NewClient(rueidis.ClientOption{InitAddress: []string{"cache:6379"}})
+	opts := rueidis.ClientOption{
+		InitAddress:       []string{"cache:6379"},
+		ForceSingleClient: true,
+	}
+	client, err := rueidis.NewClient(opts)
 	if err != nil {
 		panic(err)
 	}
