@@ -30,10 +30,10 @@ func main() {
 			log.Info("Starting worker.Inserter")
 			go worker.Run()
 		}),
-		fx.Invoke(func(subscriber *pubsub.PersonInsertSubscriber) {
-			log.Info("Starting pubsub.Subscriber")
-			go subscriber.Subscribe()
-		}),
+		// fx.Invoke(func(subscriber *pubsub.PersonInsertSubscriber) {
+		// 	log.Info("Starting pubsub.Subscriber")
+		// 	go subscriber.Subscribe()
+		// }),
 		fx.Invoke(func(*fasthttp.Server) {}),
 		fx.NopLogger,
 	)
