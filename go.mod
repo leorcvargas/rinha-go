@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/lib/pq v1.10.9
-	github.com/redis/go-redis/v9 v9.0.0-rc.4
+	github.com/redis/rueidis v1.0.15
 	github.com/valyala/fasthttp v1.48.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/fx v1.20.0
@@ -19,10 +19,8 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
@@ -40,7 +38,6 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 )

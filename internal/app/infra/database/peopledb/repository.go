@@ -5,8 +5,7 @@ import (
 	"strings"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
-	"github.com/lib/pq"
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 )
 
 type PersonRepository struct {
@@ -20,44 +19,20 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	t := top("db-create")
 	defer t()
 
-	stackText := person.StackString()
-
-	_, err := p.db.Exec(
-		InsertPersonQuery,
-		person.ID,
-		person.Nickname,
-		person.Name,
-		person.Birthdate,
-		stackText,
-		person.Nickname+person.Name+stackText,
-	)
+	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
 	if err != nil {
-		if err, ok := err.(*pq.Error); ok && err.Code == "23505" {
-			return nil, people.ErrNicknameTaken
-		}
-
 		return nil, err
+	}
+
+	if nicknameTaken {
+		return nil, people.ErrNicknameTaken
 	}
 
 	p.cache.Set(person.ID, person)
 
+	p.insertChan <- *person
+
 	return person, nil
-
-	// nicknameTaken, err := p.cache.GetNickname(person.Nickname)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// if nicknameTaken {
-	// 	return nil, people.ErrNicknameTaken
-	// }
-
-	// // p.cache.SetNickname(person.Nickname)
-	// p.cache.Set(person.ID, person)
-
-	// p.insertChan <- *person
-
-	// return person, nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
@@ -66,7 +41,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 
 	cachedPerson, err := p.cache.Get(id)
 
-	if err != nil && err != redis.Nil {
+	if err != nil && !rueidis.IsRedisNil(err) {
 		return nil, err
 	}
 

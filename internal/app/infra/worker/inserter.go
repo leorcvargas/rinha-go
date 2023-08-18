@@ -2,7 +2,6 @@ package worker
 
 import (
 	"arena"
-	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -74,24 +73,24 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	payload, err := sonic.Marshal(batch[:batchLength])
+	payload, err := sonic.MarshalString(batch[:batchLength])
 	if err != nil {
 		log.Errorf("Error marshalling batch: %v", err)
 		return err
 	}
 
-	i.cache.Cache().Publish(
-		context.Background(),
-		pubsub.EventPersonInsert,
-		payload,
-	)
+	i.cache.Cache().B().Publish().Channel(pubsub.EventPersonInsert).Message(payload).Build()
+
+	// context.Background(),
+	// pubsub.EventPersonInsert,
+	// payload,
 
 	return nil
 }
 
 func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 	valueStrings := make([]string, batchLength, batchLength)
-	valueArgs := make([]interface{}, batchLength*5, batchLength*5)
+	valueArgs := make([]interface{}, batchLength*6, batchLength*6)
 
 	for index := 0; index < batchLength; index++ {
 		person := batch[index]
@@ -100,15 +99,19 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 			continue
 		}
 
-		valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", index*5+1, index*5+2, index*5+3, index*5+4, index*5+5)
-		valueArgs[index*5] = person.ID
-		valueArgs[index*5+1] = person.Nickname
-		valueArgs[index*5+2] = person.Name
-		valueArgs[index*5+3] = person.Birthdate
-		valueArgs[index*5+4] = strings.Join(person.Stack, ",")
+		valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", index*6+1, index*6+2, index*6+3, index*6+4, index*6+5, index*6+6)
+		valueArgs[index*6] = person.ID
+		valueArgs[index*6+1] = person.Nickname
+		valueArgs[index*6+2] = person.Name
+		valueArgs[index*6+3] = person.Birthdate
+		valueArgs[index*6+4] = person.StackString()
+		valueArgs[index*6+5] = person.Nickname + person.Name + strings.Join(person.Stack, "")
+
+		log.Infof("%v", valueStrings)
+		log.Infof("%v", valueArgs)
 	}
 
-	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
+	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES "
 	for i := 0; i < len(valueStrings); i++ {
 		if i == 0 {
 			stmt += valueStrings[i]

@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/bytedance/sonic"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
+	"github.com/redis/rueidis"
 )
 
 type PersonInsertSubscriber struct {
@@ -13,25 +15,29 @@ type PersonInsertSubscriber struct {
 	mem2  *peopledb.Mem2
 }
 
+func (p *PersonInsertSubscriber) handle(msg rueidis.PubSubMessage) {
+	log.Infof("received %v", msg)
+	var people []people.Person
+
+	err := sonic.Unmarshal([]byte(msg.Message), &people)
+	if err != nil {
+		log.Errorf("Error on unmarshal message %s - err %v", msg.Message, err)
+		panic(err)
+	}
+
+	p.mem2.AddBatch(people)
+}
+
 func (p *PersonInsertSubscriber) Subscribe() {
-	sub := p.cache.Cache().Subscribe(context.Background(), EventPersonInsert)
-	defer sub.Close()
+	err := p.cache.Cache().Receive(
+		context.Background(),
+		p.cache.Cache().B().Subscribe().Channel(EventPersonInsert).Build(),
+		p.handle,
+	)
 
-	ch := sub.Channel()
-
-	for msg := range ch {
-		// memory := arena.NewArena()
-
-		// people := arena.MakeSlice[people.Person](memory, 0, 50)
-
-		var people []people.Person
-
-		err := sonic.Unmarshal([]byte(msg.Payload), &people)
-		if err != nil {
-			panic(err)
-		}
-
-		p.mem2.AddBatch(people)
+	if err != nil {
+		log.Errorf("Error on subscribe to %s - err %v", EventPersonInsert, err)
+		panic(err)
 	}
 }
 

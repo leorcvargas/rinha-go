@@ -9,7 +9,7 @@ CREATE TABLE
         "name" varchar(100) NOT NULL,
         birthdate date NOT NULL,
         stack text NULL,
-        trgm_q text NOT NULL,
+        search text NOT NULL,
         CONSTRAINT people_nickname_key UNIQUE (nickname)
     );
 
@@ -25,4 +25,4 @@ CREATE TABLE
 
 
 CREATE INDEX CONCURRENTLY
-    IF NOT EXISTS idx_people_trigram ON public.people USING gist (trgm_q gist_trgm_ops);
+    IF NOT EXISTS idx_people_trigram ON public.people USING gist (search gist_trgm_ops);
