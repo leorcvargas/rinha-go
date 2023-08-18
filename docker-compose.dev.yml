@@ -1,7 +1,7 @@
 version: "3.5"
 services:
   db:
-    build: ./scripts/postgres
+    image: postgres:15
     hostname: db
     environment:
       POSTGRES_PASSWORD: postgres
