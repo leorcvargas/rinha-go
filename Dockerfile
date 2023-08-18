@@ -22,4 +22,6 @@ COPY --from=builder /app/bin/rinha .
 
 ENV GOGC 300
 
-CMD /rinha
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD ["./rinha"]
