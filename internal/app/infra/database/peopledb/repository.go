@@ -3,7 +3,9 @@ package peopledb
 import (
 	"context"
 	"strings"
+	"time"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -88,6 +90,7 @@ func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
 		term,
 	)
 	if err != nil {
+		log.Errorf("Error executing trigram search: %v", err)
 		return nil, err
 	}
 
@@ -116,7 +119,7 @@ func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	for rows.Next() {
 		var person people.Person
 		var strStack string
-		var birthdate string
+		var birthdate time.Time
 
 		err := rows.Scan(
 			&person.ID,
@@ -126,11 +129,12 @@ func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 			&strStack,
 		)
 		if err != nil {
+			log.Errorf("Error scanning row: %v", err)
 			return nil, err
 		}
 
 		person.Stack = strings.Split(strStack, ",")
-		person.Birthdate = birthdate[0:10]
+		person.Birthdate = birthdate.Format("2006-01-02")
 
 		result = append(result, person)
 	}

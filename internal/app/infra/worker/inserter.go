@@ -93,7 +93,7 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 	dbBatch := &pgx.Batch{}
 
-	query := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES ($1, $2, $3, $4, $5)"
+	query := "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES ($1, $2, $3, $4, $5, $6)"
 	for index := 0; index < batchLength; index++ {
 		person := batch[index]
 
@@ -108,6 +108,7 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 			person.Name,
 			person.Birthdate,
 			person.StackString(),
+			person.Name+person.Nickname+person.StackString(),
 		)
 	}
 

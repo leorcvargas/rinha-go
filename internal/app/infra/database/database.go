@@ -73,6 +73,7 @@ func NewPostgresDatabase() *pgxpool.Pool {
 				person.Name,
 				person.Birthdate,
 				person.StackString(),
+				"somestring",
 			)
 			if err != nil {
 				log.Fatalf("Failed to warmup database: %v", err)
