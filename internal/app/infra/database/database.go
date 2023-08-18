@@ -50,7 +50,7 @@ func NewPostgresDatabase() *sql.DB {
 			_, err := pg.Exec(
 				peopledb.InsertPersonQuery,
 				person.ID,
-				person.Nickname,
+				person.ID,
 				person.Name,
 				person.Birthdate,
 				person.StackString(),
