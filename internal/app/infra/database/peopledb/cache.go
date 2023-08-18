@@ -20,10 +20,10 @@ func (p *PeopleDbCache) Cache() rueidis.Client {
 }
 
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
-	t := top("cache-get-nickname")
+	t := top("cache-get")
 	defer t()
 
-	personBytes, err := p.client.Do(ctx, p.client.B().Get().Key(key).Build()).AsBytes()
+	personBytes, err := p.client.DoCache(ctx, p.client.B().Get().Key(key).Cache(), time.Hour).AsBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	t := top("cache-get-nickname")
 	defer t()
 
-	_, err := p.client.Do(ctx, p.client.B().Get().Key(nickname).Build()).AsBytes()
+	_, err := p.client.DoCache(ctx, p.client.B().Get().Key(nickname).Cache(), time.Hour).AsBytes()
 	if err != nil {
 		if rueidis.IsRedisNil(err) {
 			return false, nil
