@@ -77,22 +77,27 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 		errChan <- nil
 	}()
 
-	go func() {
-		err := p.SetNickname(person.Nickname)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		errChan <- nil
-	}()
-
-	for i := 0; i < 2; i++ {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
+	err := <-errChan
+	if err != nil {
+		return nil, err
 	}
+
+	// go func() {
+	// 	err := p.SetNickname(person.Nickname)
+	// 	if err != nil {
+	// 		errChan <- err
+	// 		return
+	// 	}
+
+	// 	errChan <- nil
+	// }()
+
+	// for i := 0; i < 2; i++ {
+	// 	err := <-errChan
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	return person, nil
 }
