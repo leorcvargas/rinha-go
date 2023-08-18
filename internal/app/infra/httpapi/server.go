@@ -13,23 +13,27 @@ import (
 	"go.uber.org/fx"
 )
 
-func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.Server {
-	// profile cpu
+func prof() func() {
 	f, err := os.Create(os.Getenv("CPU_PROFILE"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
 
-	// profile mem
 	mf, err := os.Create(os.Getenv("MEM_PROFILE"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
 	pprof.WriteHeapProfile(mf)
 
+	return func() {
+		pprof.StopCPUProfile()
+		f.Close()
+		mf.Close()
+	}
+}
+
+func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.Server {
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
@@ -41,12 +45,6 @@ func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.S
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			defer func() {
-				pprof.StopCPUProfile()
-				f.Close()
-				mf.Close()
-			}()
-
 			log.Info("Stopping the server...")
 
 			return router.ShutdownWithContext(ctx)
