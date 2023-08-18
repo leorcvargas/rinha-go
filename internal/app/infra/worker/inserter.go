@@ -2,6 +2,7 @@ package worker
 
 import (
 	"arena"
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -79,7 +80,18 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	i.cache.Cache().B().Publish().Channel(pubsub.EventPersonInsert).Message(payload).Build()
+	i.cache.
+		Cache().
+		Do(
+			context.Background(),
+			i.cache.
+				Cache().
+				B().
+				Publish().
+				Channel(pubsub.EventPersonInsert).
+				Message(payload).
+				Build(),
+		)
 
 	// context.Background(),
 	// pubsub.EventPersonInsert,
@@ -106,9 +118,6 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 		valueArgs[index*6+3] = person.Birthdate
 		valueArgs[index*6+4] = person.StackString()
 		valueArgs[index*6+5] = person.Nickname + person.Name + strings.Join(person.Stack, "")
-
-		log.Infof("%v", valueStrings)
-		log.Infof("%v", valueArgs)
 	}
 
 	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES "
