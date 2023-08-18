@@ -57,7 +57,10 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 		return nil, people.ErrNicknameTaken
 	}
 
-	p.jobQueue <- Job{Payload: person}
+	// p.jobQueue <- Job{Payload: person}
+
+	p.cache.Set(person.ID, person)
+
 	p.insertChan <- *person
 
 	return person, nil
