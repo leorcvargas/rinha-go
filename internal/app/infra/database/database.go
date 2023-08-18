@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -54,7 +53,6 @@ func NewPostgresDatabase() *sql.DB {
 				person.Name,
 				person.Birthdate,
 				person.StackString(),
-				person.Nickname+person.Name+strings.Join(person.Stack, ""),
 			)
 			if err != nil {
 				log.Fatalf("Failed to warmup database: %v", err)
