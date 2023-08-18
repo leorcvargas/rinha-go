@@ -39,7 +39,7 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 		return nil, err
 	}
 
-	p.cache.Set(person.ID, person)
+	go p.cache.Set(person.ID, person)
 
 	return person, nil
 
