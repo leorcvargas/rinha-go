@@ -16,7 +16,6 @@ type PersonInsertSubscriber struct {
 }
 
 func (p *PersonInsertSubscriber) handle(msg rueidis.PubSubMessage) {
-	log.Infof("received %v", msg)
 	var people []people.Person
 
 	err := sonic.Unmarshal([]byte(msg.Message), &people)
