@@ -2,17 +2,14 @@ package worker
 
 import (
 	"arena"
-	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
-	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
 type Inserter struct {
@@ -30,7 +27,7 @@ func (i *Inserter) Run() {
 	batchLen := 0
 
 	tickProcess := time.Tick(5 * time.Second)
-	tickClear := time.Tick(4 * time.Minute)
+	tickClear := time.Tick(1 * time.Minute)
 
 	for {
 		select {
@@ -74,29 +71,30 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	payload, err := sonic.MarshalString(batch[:batchLength])
-	if err != nil {
-		log.Errorf("Error marshalling batch: %v", err)
-		return err
-	}
+	// TODO uncomment if the search in mem is coming back
+	// payload, err := sonic.MarshalString(batch[:batchLength])
+	// if err != nil {
+	// 	log.Errorf("Error marshalling batch: %v", err)
+	// 	return err
+	// }
 
-	err = i.cache.
-		Cache().
-		Do(
-			context.Background(),
-			i.cache.
-				Cache().
-				B().
-				Publish().
-				Channel(pubsub.EventPersonInsert).
-				Message(payload).
-				Build(),
-		).
-		Error()
-	if err != nil {
-		log.Errorf("Error publishing batch: %v", err)
-		return err
-	}
+	// err = i.cache.
+	// 	Cache().
+	// 	Do(
+	// 		context.Background(),
+	// 		i.cache.
+	// 			Cache().
+	// 			B().
+	// 			Publish().
+	// 			Channel(pubsub.EventPersonInsert).
+	// 			Message(payload).
+	// 			Build(),
+	// 	).
+	// 	Error()
+	// if err != nil {
+	// 	log.Errorf("Error publishing batch: %v", err)
+	// 	return err
+	// }
 
 	return nil
 }
