@@ -57,52 +57,24 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	t := top("cache-set")
 	defer t()
 
-	errChan := make(chan error, 2)
-	defer close(errChan)
+	item, err := sonic.MarshalString(person)
+	if err != nil {
+		return nil, err
+	}
 
-	go func() {
-		item, err := sonic.MarshalString(person)
-		if err != nil {
-			errChan <- err
-			return
-		}
+	cmds := make(rueidis.Commands, 0, 2)
+	cmds = append(cmds, p.client.B().Set().Key(person.ID).Value(item).Ex(time.Hour).Build())
+	cmds = append(cmds, p.client.B().Set().Key(person.Nickname).Value("1").Ex(time.Hour).Build())
 
-		_, err = p.client.Do(ctx, p.client.B().Set().Key(key).Value(item).Ex(time.Hour).Build()).AsBytes()
-		if err != nil {
-			errChan <- err
-			return
-		}
+	for _, res := range p.client.DoMulti(ctx, cmds...) {
+		err := res.Error()
 
-		errChan <- nil
-	}()
-
-	go func() {
-		err := p.SetNickname(person.Nickname)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		errChan <- nil
-	}()
-
-	for i := 0; i < 2; i++ {
-		err := <-errChan
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return person, nil
-}
-
-func (p *PeopleDbCache) SetNickname(nickname string) error {
-	t := top("cache-set-nickname")
-	defer t()
-
-	_, err := p.client.Do(ctx, p.client.B().Set().Key(nickname).Value("true").Ex(time.Hour).Build()).AsBytes()
-
-	return err
 }
 
 func NewPeopleDbCache() *PeopleDbCache {
