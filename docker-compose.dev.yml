@@ -95,7 +95,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
+          cpus: "0.20"
           memory: "0.5GB"
 
   cache:
@@ -107,7 +107,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.1"
+          cpus: "0.15"
           memory: "0.5GB"
     command:
       [
