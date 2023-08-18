@@ -13,6 +13,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/redis/rueidis v1.0.15
 	github.com/valyala/fasthttp v1.48.0
+	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/fx v1.20.0
 )
 
