@@ -16,9 +16,6 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	t := top("db-create")
-	defer t()
-
 	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
 	if err != nil {
 		return nil, err
@@ -36,9 +33,6 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
-	t := top("db-find-by-id")
-	defer t()
-
 	cachedPerson, err := p.cache.Get(id)
 
 	if err != nil && !rueidis.IsRedisNil(err) {
@@ -76,8 +70,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	t := top("db-search")
-	defer t()
 	result := p.mem2.Search(term)
 	return result, nil
 }
@@ -101,8 +93,6 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 // }
 
 func (p *PersonRepository) CountAll() (int64, error) {
-	t := top("db-count")
-	defer t()
 	var total int64
 
 	err := p.db.QueryRow(

@@ -20,9 +20,6 @@ func (p *PeopleDbCache) Cache() rueidis.Client {
 }
 
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
-	t := top("cache-get")
-	defer t()
-
 	getCmd := p.client.
 		B().
 		Get().
@@ -44,9 +41,6 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 }
 
 func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
-	t := top("cache-get-nickname")
-	defer t()
-
 	getNicknameCmd := p.client.
 		B().
 		Getbit().
@@ -58,9 +52,6 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 }
 
 func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
-	t := top("cache-set")
-	defer t()
-
 	item, err := sonic.MarshalString(person)
 	if err != nil {
 		return nil, err

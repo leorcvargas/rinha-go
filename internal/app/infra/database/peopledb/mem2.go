@@ -40,13 +40,15 @@ func (m *Mem2) AddBatch(batch []people.Person) {
 	for i := 0; i < batchSize; i++ {
 		item := batch[i]
 
+		key := strings.ToLower(item.Nickname + item.Name + strings.Join(item.Stack, ""))
+
 		input[i] = PersonItem{
-			Key:    item.Nickname + " " + item.Name + " " + item.StackString(),
+			Key:    key,
 			Person: item,
 		}
 	}
 
-	m.list = append(m.list, input...)
+	m.list = append(m.list, arena.Clone(input)...)
 }
 
 func (m *Mem2) Search(query string) []people.Person {
@@ -91,7 +93,9 @@ func (m *Mem2) Search(query string) []people.Person {
 }
 
 func NewMem2() *Mem2 {
-	return &Mem2{
+	mem2 := &Mem2{
 		list: make([]PersonItem, 0, maxMem2Items),
 	}
+
+	return mem2
 }
