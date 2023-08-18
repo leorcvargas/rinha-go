@@ -99,9 +99,9 @@ services:
           memory: "0.5GB"
 
   cache:
+    image: redis:7
+    # image: eqalpha/keydb:latest
     hostname: cache
-    # image: redis:7-alpine
-    image: eqalpha/keydb:latest
     ports:
       - "6379:6379"
     deploy:
@@ -109,16 +109,17 @@ services:
         limits:
           cpus: "0.15"
           memory: "0.5GB"
-    command:
-      [
-        "keydb-server",
-        "--save",
-        '""',
-        "--appendonly",
-        "no",
-        "--server-threads",
-        "2",
-      ]
+    command: ["redis-server", "--save", '""', "--appendonly", "no"]
+    # command:
+    #   [
+    #     "keydb-server",
+    #     "--save",
+    #     '""',
+    #     "--appendonly",
+    #     "no",
+    #     "--server-threads",
+    #     "2",
+    #   ]
 
 volumes:
   postgres-db:
