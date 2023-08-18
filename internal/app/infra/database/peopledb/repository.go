@@ -81,6 +81,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 
 	var person people.Person
 	var strStack string
+	var birthdate time.Time
 
 	err = p.db.QueryRow(
 		context.Background(),
@@ -90,10 +91,11 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 		&person.ID,
 		&person.Nickname,
 		&person.Name,
-		&person.Birthdate,
+		&birthdate,
 		&strStack,
 	)
 	person.Stack = strings.Split(strStack, ",")
+	person.Birthdate = birthdate.Format("2006-01-02")
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
