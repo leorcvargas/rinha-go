@@ -2,11 +2,13 @@ package peopledb
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/rueidis"
@@ -32,7 +34,11 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	)
 
 	if err != nil {
-		log.Errorf("Error inserting person: %v", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, people.ErrNicknameTaken
+		}
+
 		return nil, err
 	}
 
