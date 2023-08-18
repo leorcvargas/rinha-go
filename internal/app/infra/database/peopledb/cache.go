@@ -58,29 +58,34 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	t := top("cache-set")
 	defer t()
 
-	errChan := make(chan error, 2)
-	defer close(errChan)
-
-	go func() {
-		item, err := sonic.Marshal(person)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		_, err = p.peopleCache.Set(ctx, key, item, time.Hour).Result()
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		errChan <- nil
-	}()
-
-	err := <-errChan
+	item, err := sonic.Marshal(person)
 	if err != nil {
 		return nil, err
 	}
+
+	_, err = p.peopleCache.Set(ctx, key, item, time.Hour).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// errChan := make(chan error, 2)
+	// defer close(errChan)
+
+	// go func() {
+	// 	item, err := sonic.Marshal(person)
+	// 	if err != nil {
+	// 		errChan <- err
+	// 		return
+	// 	}
+
+	// 	_, err = p.peopleCache.Set(ctx, key, item, time.Hour).Result()
+	// 	if err != nil {
+	// 		errChan <- err
+	// 		return
+	// 	}
+
+	// 	errChan <- nil
+	// }()
 
 	// go func() {
 	// 	err := p.SetNickname(person.Nickname)
