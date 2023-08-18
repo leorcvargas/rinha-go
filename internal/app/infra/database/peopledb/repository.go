@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
+	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -19,21 +20,41 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	t := top("db-create")
 	defer t()
 
-	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	_, err := p.db.Exec(
+		InsertPersonQuery,
+		person.ID,
+		person.Nickname,
+		person.Name,
+		person.Birthdate,
+		person.StackString(),
+	)
 	if err != nil {
+		if err, ok := err.(*pq.Error); ok && err.Code == "23505" {
+			return nil, people.ErrNicknameTaken
+		}
+
 		return nil, err
 	}
 
-	if nicknameTaken {
-		return nil, people.ErrNicknameTaken
-	}
-
-	// p.cache.SetNickname(person.Nickname)
 	p.cache.Set(person.ID, person)
 
-	p.insertChan <- *person
-
 	return person, nil
+
+	// nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// if nicknameTaken {
+	// 	return nil, people.ErrNicknameTaken
+	// }
+
+	// // p.cache.SetNickname(person.Nickname)
+	// p.cache.Set(person.ID, person)
+
+	// p.insertChan <- *person
+
+	// return person, nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
@@ -76,11 +97,27 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
+// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+// 	t := top("db-search")
+// 	defer t()
+// 	result := p.mem2.Search(term)
+// 	return result, nil
+// }
+
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	t := top("db-search")
-	defer t()
-	result := p.mem2.Search(term)
-	return result, nil
+	return p.searchTrigram(term)
+}
+
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapSearchResult(rows)
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
