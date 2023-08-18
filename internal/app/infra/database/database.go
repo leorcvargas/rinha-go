@@ -38,23 +38,6 @@ func NewPostgresDatabase() *pgxpool.Pool {
 			log.Fatalln("Unable to create connection pool:", err)
 		}
 
-		// dsn := fmt.Sprintf(
-		// 	"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		// 	os.Getenv("DB_HOST"),
-		// 	os.Getenv("DB_USER"),
-		// 	os.Getenv("DB_PASSWORD"),
-		// 	os.Getenv("DB_NAME"),
-		// 	os.Getenv("DB_PORT"),
-		// )
-
-		// pg, err := sql.Open("postgres", dsn)
-		// if err != nil {
-		// 	log.Fatalf("Failed to connect to database: %v", err)
-		// }
-
-		// pg.SetMaxOpenConns(25)
-		// pg.SetMaxIdleConns(25)
-
 		// warmup
 		var ids []string
 		for i := 0; i < 10; i++ {
@@ -73,7 +56,6 @@ func NewPostgresDatabase() *pgxpool.Pool {
 				person.Name,
 				person.Birthdate,
 				person.StackString(),
-				"somestring",
 			)
 			if err != nil {
 				log.Fatalf("Failed to warmup database: %v", err)
