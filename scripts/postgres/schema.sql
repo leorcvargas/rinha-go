@@ -1,10 +1,6 @@
-SET enable_seqscan = off;
-
 CREATE EXTENSION IF NOT EXISTS "unaccent";
 
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
-CREATE EXTENSION IF NOT EXISTS "pgroonga";
 
 CREATE TABLE
     IF NOT EXISTS public.people (
@@ -17,23 +13,16 @@ CREATE TABLE
         CONSTRAINT people_nickname_key UNIQUE (nickname)
     );
 
--- ALTER TABLE public.people
+ALTER TABLE public.people
 
--- ADD
+ADD
 
---     COLUMN trgm_q text GENERATED ALWAYS AS (
+    COLUMN trgm_q text GENERATED ALWAYS AS (
 
---         nickname || ' ' || "name" || ' ' || stack
+        nickname || ' ' || "name" || ' ' || stack
 
---     ) STORED;
+    ) STORED;
+
 
 CREATE INDEX
-    IF NOT EXISTS pgroonga_search_index ON public.people USING pgroonga (trgm_q)
-WITH (
-        tokenizer = 'TokenTrigram',
-        normalizer = ''
-    );
-
--- CREATE INDEX
-
---     IF NOT EXISTS CONCURRENTLY idx_people_trigram ON public.people USING gist (trgm_q gist_trgm_ops);
+    IF NOT EXISTS CONCURRENTLY idx_people_trigram ON public.people USING gist (trgm_q gist_trgm_ops);

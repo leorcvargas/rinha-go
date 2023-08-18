@@ -7,8 +7,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/google/uuid"
-	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 	_ "github.com/lib/pq"
 )
 
@@ -39,16 +37,6 @@ func NewPostgresDatabase() *sql.DB {
 		if err := pg.Ping(); err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
-
-		pg.Exec(
-			peopledb.InsertPersonQuery,
-			uuid.NewString(),
-			"leorcvargas",
-			"Leonardo Vargas",
-			"1970-01-01",
-			"Go, Node.js",
-			"leorcvargas "+"Leonardo Vargas"+"Go, Node.js",
-		)
 
 		db = pg
 	})
