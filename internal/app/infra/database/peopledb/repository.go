@@ -75,30 +75,30 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
-func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	t := top("db-search")
-	defer t()
-	result := p.mem2.Search(term)
-	return result, nil
-}
-
 // func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 // 	t := top("db-search")
 // 	defer t()
-// 	return p.searchTrigram(term)
+// 	result := p.mem2.Search(term)
+// 	return result, nil
 // }
 
-// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		SearchPeopleTrgmQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+	t := top("db-search")
+	defer t()
+	return p.searchTrigram(term)
+}
 
-// 	return mapSearchResult(rows)
-// }
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapSearchResult(rows)
+}
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	t := top("db-count")
