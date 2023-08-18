@@ -23,7 +23,18 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	t := top("cache-get")
 	defer t()
 
-	personBytes, err := p.client.DoCache(ctx, p.client.B().Get().Key(key).Cache(), time.Hour).AsBytes()
+	getCmd := p.client.
+		B().
+		Hmget().
+		Key(key).
+		Field("id").
+		Field("nickname").
+		Field("name").
+		Field("birthdate").
+		Field("stack").
+		Cache()
+
+	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
 	if err != nil {
 		return nil, err
 	}
