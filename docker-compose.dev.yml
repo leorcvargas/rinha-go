@@ -109,7 +109,7 @@ services:
           cpus: "0.3"
           memory: "0.5GB"
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 64M
 
   cache:
@@ -118,17 +118,24 @@ services:
     image: eqalpha/keydb:latest
     ports:
       - "6379:6379"
-    volumes:
-      - ./scripts/keydb/keydb.conf:/etc/keydb/keydb.conf:ro
     deploy:
       resources:
         limits:
           cpus: "0.3"
           memory: "0.5GB"
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 64M
-    command: ["keydb-server", "--save", '""', "--appendonly", "no", "--config", "/etc/keydb/keydb.conf"]
+    command:
+      [
+        "keydb-server",
+        "--save",
+        '""',
+        "--appendonly",
+        "no",
+        "--server-threads",
+        "2",
+      ]
 
 volumes:
   postgres-db:
