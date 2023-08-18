@@ -4,6 +4,7 @@ import (
 	"arena"
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -101,18 +102,8 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 }
 
 func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
-	stmt, err := i.db.Prepare(peopledb.InsertPersonQuery)
-	if err != nil {
-		log.Errorf("Error preparing batch: %v", err)
-		return err
-	}
-	defer stmt.Close()
-
-	tx, err := i.db.Begin()
-	if err != nil {
-		log.Errorf("Error starting transaction: %v", err)
-		return err
-	}
+	valueStrings := make([]string, batchLength, batchLength)
+	valueArgs := make([]interface{}, batchLength*6, batchLength*6)
 
 	for index := 0; index < batchLength; index++ {
 		person := batch[index]
@@ -121,64 +112,31 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 			continue
 		}
 
-		_, err := tx.Stmt(stmt).Exec(
-			person.ID,
-			person.Nickname,
-			person.Name,
-			person.Birthdate,
-			strings.Join(person.Stack, ","),
-			person.Nickname+person.Name+strings.Join(person.Stack, ""),
-		)
+		valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", index*6+1, index*6+2, index*6+3, index*6+4, index*6+5, index*6+6)
+		valueArgs[index*6] = person.ID
+		valueArgs[index*6+1] = person.Nickname
+		valueArgs[index*6+2] = person.Name
+		valueArgs[index*6+3] = person.Birthdate
+		valueArgs[index*6+4] = person.StackString()
+		valueArgs[index*6+5] = person.Nickname + person.Name + strings.Join(person.Stack, "")
+	}
 
-		if err != nil {
-			log.Errorf("Error inserting batch: %v", err)
-			return err
+	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES "
+	for i := 0; i < len(valueStrings); i++ {
+		if i == 0 {
+			stmt += valueStrings[i]
+		} else {
+			stmt += "," + valueStrings[i]
 		}
 	}
 
-	err = tx.Commit()
+	_, err := i.db.Exec(stmt, valueArgs...)
 	if err != nil {
-		log.Errorf("Error committing transaction: %v", err)
+		log.Errorf("Error inserting batch: %v", err)
 		return err
 	}
 
 	return nil
-
-	// valueStrings := make([]string, batchLength, batchLength)
-	// valueArgs := make([]interface{}, batchLength*6, batchLength*6)
-
-	// for index := 0; index < batchLength; index++ {
-	// 	person := batch[index]
-
-	// 	if person.ID == "" {
-	// 		continue
-	// 	}
-
-	// 	valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", index*6+1, index*6+2, index*6+3, index*6+4, index*6+5, index*6+6)
-	// 	valueArgs[index*6] = person.ID
-	// 	valueArgs[index*6+1] = person.Nickname
-	// 	valueArgs[index*6+2] = person.Name
-	// 	valueArgs[index*6+3] = person.Birthdate
-	// 	valueArgs[index*6+4] = person.StackString()
-	// 	valueArgs[index*6+5] = person.Nickname + person.Name + strings.Join(person.Stack, "")
-	// }
-
-	// stmt := "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES "
-	// for i := 0; i < len(valueStrings); i++ {
-	// 	if i == 0 {
-	// 		stmt += valueStrings[i]
-	// 	} else {
-	// 		stmt += "," + valueStrings[i]
-	// 	}
-	// }
-
-	// _, err := i.db.Exec(stmt, valueArgs...)
-	// if err != nil {
-	// 	log.Errorf("Error inserting batch: %v", err)
-	// 	return err
-	// }
-
-	// return nil
 }
 
 func NewInserter(
