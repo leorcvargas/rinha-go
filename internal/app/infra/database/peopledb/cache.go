@@ -52,7 +52,7 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	t := top("cache-get-nickname")
 	defer t()
 
-	_, err := p.client.DoCache(ctx, p.client.B().Get().Key(nickname).Cache(), time.Hour).AsBytes()
+	_, err := p.client.DoCache(ctx, p.client.B().Getbit().Key(nickname).Offset(0).Cache(), time.Hour).AsBytes()
 	if err != nil {
 		if rueidis.IsRedisNil(err) {
 			return false, nil
