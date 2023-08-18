@@ -20,7 +20,7 @@ EXPOSE 8080
 
 COPY --from=builder /app/bin/rinha .
 
-ENV GOGC 300
+ENV GOGC 1000
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
