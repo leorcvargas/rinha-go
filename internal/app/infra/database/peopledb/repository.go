@@ -2,7 +2,6 @@ package peopledb
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -73,28 +72,27 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
+// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+// 	result := p.mem2.Search(term)
+// 	return result, nil
+// }
+
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	result := p.mem2.Search(term)
-	return result, nil
+	return p.searchTrigram(term)
 }
 
-// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-// 	t := top("db-search")
-// 	defer t()
-// 	return p.searchTrigram(term)
-// }
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		context.Background(),
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		SearchPeopleTrgmQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return mapSearchResult(rows)
-// }
+	return mapSearchResult(rows)
+}
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
@@ -113,7 +111,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	return total, nil
 }
 
-func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
+func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0)
 	for rows.Next() {
 		var person people.Person

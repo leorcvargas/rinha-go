@@ -5,13 +5,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
-	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
 type Inserter struct {
@@ -65,29 +63,29 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	payload, err := sonic.MarshalString(batch[:batchLength])
-	if err != nil {
-		log.Errorf("Error marshalling batch: %v", err)
-		return err
-	}
+	// payload, err := sonic.MarshalString(batch[:batchLength])
+	// if err != nil {
+	// 	log.Errorf("Error marshalling batch: %v", err)
+	// 	return err
+	// }
 
-	err = i.cache.
-		Cache().
-		Do(
-			context.Background(),
-			i.cache.
-				Cache().
-				B().
-				Publish().
-				Channel(pubsub.EventPersonInsert).
-				Message(payload).
-				Build(),
-		).
-		Error()
-	if err != nil {
-		log.Errorf("Error publishing batch: %v", err)
-		return err
-	}
+	// err = i.cache.
+	// 	Cache().
+	// 	Do(
+	// 		context.Background(),
+	// 		i.cache.
+	// 			Cache().
+	// 			B().
+	// 			Publish().
+	// 			Channel(pubsub.EventPersonInsert).
+	// 			Message(payload).
+	// 			Build(),
+	// 	).
+	// 	Error()
+	// if err != nil {
+	// 	log.Errorf("Error publishing batch: %v", err)
+	// 	return err
+	// }
 
 	return nil
 }
@@ -125,45 +123,6 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 	}
 
 	return nil
-
-	// // totalCols := 5
-
-	// // valueStrings := make([]string, batchLength, batchLength)
-	// // valueArgs := make([]interface{}, batchLength*totalCols, batchLength*totalCols)
-
-	// // for index := 0; index < batchLength; index++ {
-	// // 	person := batch[index]
-
-	// // 	if person.ID == "" {
-	// // 		continue
-	// // 	}
-
-	// // 	colIndex := index * totalCols
-
-	// // 	valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", colIndex+1, colIndex+2, colIndex+3, colIndex+4, colIndex+5)
-	// // 	valueArgs[colIndex] = person.ID
-	// // 	valueArgs[colIndex+1] = person.Nickname
-	// // 	valueArgs[colIndex+2] = person.Name
-	// // 	valueArgs[colIndex+3] = person.Birthdate
-	// // 	valueArgs[colIndex+4] = person.StackString()
-	// // }
-
-	// // stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
-	// // for i := 0; i < len(valueStrings); i++ {
-	// // 	if i == 0 {
-	// // 		stmt += valueStrings[i]
-	// // 	} else {
-	// // 		stmt += "," + valueStrings[i]
-	// // 	}
-	// // }
-
-	// _, err := i.db.Exec(context.Background(), stmt, valueArgs...)
-	// if err != nil {
-	// 	log.Errorf("Error inserting batch: %v", err)
-	// 	return err
-	// }
-
-	// return nil
 }
 
 func NewInserter(
