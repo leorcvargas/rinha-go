@@ -10,18 +10,18 @@ COPY . .
 
 ENV GOEXPERIMENT arenas
 
-RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
+RUN go build -v -o ./bin/rinha ./cmd/rinha.go
 
-FROM alpine:3.14.10
+# FROM alpine:3.14.10
 
-RUN apk add dumb-init
+RUN apt-get update && apt-get install dumb-init
 
 EXPOSE 8080
 
-COPY --from=builder /app/bin/rinha .
+# COPY --from=builder /app/bin/rinha .
 
 ENV GOGC 1000
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-CMD ["./rinha"]
+CMD ["/app/bin/rinha"]

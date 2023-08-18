@@ -3,11 +3,11 @@ package worker
 import (
 	"arena"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
@@ -93,11 +93,9 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 }
 
 func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
-	totalCols := 5
+	dbBatch := &pgx.Batch{}
 
-	valueStrings := make([]string, batchLength, batchLength)
-	valueArgs := make([]interface{}, batchLength*totalCols, batchLength*totalCols)
-
+	query := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES ($1, $2, $3, $4, $5)"
 	for index := 0; index < batchLength; index++ {
 		person := batch[index]
 
@@ -105,32 +103,67 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 			continue
 		}
 
-		colIndex := index * totalCols
-
-		valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", colIndex+1, colIndex+2, colIndex+3, colIndex+4, colIndex+5)
-		valueArgs[colIndex] = person.ID
-		valueArgs[colIndex+1] = person.Nickname
-		valueArgs[colIndex+2] = person.Name
-		valueArgs[colIndex+3] = person.Birthdate
-		valueArgs[colIndex+4] = person.StackString()
+		dbBatch.Queue(
+			query,
+			person.ID,
+			person.Nickname,
+			person.Name,
+			person.Birthdate,
+			person.StackString(),
+		)
 	}
 
-	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
-	for i := 0; i < len(valueStrings); i++ {
-		if i == 0 {
-			stmt += valueStrings[i]
-		} else {
-			stmt += "," + valueStrings[i]
+	batchResults := i.db.SendBatch(context.Background(), dbBatch)
+	defer batchResults.Close()
+
+	for index := 0; index < batchLength; index++ {
+		_, err := batchResults.Exec()
+		if err != nil {
+			log.Errorf("Error inserting batch: %v", err)
+			return err
 		}
 	}
 
-	_, err := i.db.Exec(context.Background(), stmt, valueArgs...)
-	if err != nil {
-		log.Errorf("Error inserting batch: %v", err)
-		return err
-	}
-
 	return nil
+
+	// // totalCols := 5
+
+	// // valueStrings := make([]string, batchLength, batchLength)
+	// // valueArgs := make([]interface{}, batchLength*totalCols, batchLength*totalCols)
+
+	// // for index := 0; index < batchLength; index++ {
+	// // 	person := batch[index]
+
+	// // 	if person.ID == "" {
+	// // 		continue
+	// // 	}
+
+	// // 	colIndex := index * totalCols
+
+	// // 	valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", colIndex+1, colIndex+2, colIndex+3, colIndex+4, colIndex+5)
+	// // 	valueArgs[colIndex] = person.ID
+	// // 	valueArgs[colIndex+1] = person.Nickname
+	// // 	valueArgs[colIndex+2] = person.Name
+	// // 	valueArgs[colIndex+3] = person.Birthdate
+	// // 	valueArgs[colIndex+4] = person.StackString()
+	// // }
+
+	// // stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
+	// // for i := 0; i < len(valueStrings); i++ {
+	// // 	if i == 0 {
+	// // 		stmt += valueStrings[i]
+	// // 	} else {
+	// // 		stmt += "," + valueStrings[i]
+	// // 	}
+	// // }
+
+	// _, err := i.db.Exec(context.Background(), stmt, valueArgs...)
+	// if err != nil {
+	// 	log.Errorf("Error inserting batch: %v", err)
+	// 	return err
+	// }
+
+	// return nil
 }
 
 func NewInserter(
