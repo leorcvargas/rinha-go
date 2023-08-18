@@ -2,11 +2,11 @@ package httpapi
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"runtime/pprof"
 
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
@@ -33,7 +33,7 @@ func prof() func() {
 	}
 }
 
-func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.Server {
+func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *pgxpool.Pool) *fasthttp.Server {
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {

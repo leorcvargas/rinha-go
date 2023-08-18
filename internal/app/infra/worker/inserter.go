@@ -3,12 +3,12 @@ package worker
 import (
 	"arena"
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
@@ -16,7 +16,7 @@ import (
 
 type Inserter struct {
 	insertChan chan people.Person
-	db         *sql.DB
+	db         *pgxpool.Pool
 	cache      *peopledb.PeopleDbCache
 }
 
@@ -124,7 +124,7 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 		}
 	}
 
-	_, err := i.db.Exec(stmt, valueArgs...)
+	_, err := i.db.Exec(context.Background(), stmt, valueArgs...)
 	if err != nil {
 		log.Errorf("Error inserting batch: %v", err)
 		return err
@@ -135,7 +135,7 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 
 func NewInserter(
 	insertChan chan people.Person,
-	db *sql.DB,
+	db *pgxpool.Pool,
 	cache *peopledb.PeopleDbCache,
 ) *Inserter {
 	return &Inserter{

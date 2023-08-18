@@ -1,40 +1,59 @@
 package database
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"sync"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
-	_ "github.com/lib/pq"
 )
 
 var (
-	db   *sql.DB
+	db   *pgxpool.Pool
 	once sync.Once
 )
 
-func NewPostgresDatabase() *sql.DB {
+func NewPostgresDatabase() *pgxpool.Pool {
 	once.Do(func() {
-		dsn := fmt.Sprintf(
-			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-			os.Getenv("DB_HOST"),
+		connUrl := fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 			os.Getenv("DB_USER"),
 			os.Getenv("DB_PASSWORD"),
-			os.Getenv("DB_NAME"),
+			os.Getenv("DB_HOST"),
 			os.Getenv("DB_PORT"),
+			os.Getenv("DB_NAME"),
 		)
 
-		pg, err := sql.Open("postgres", dsn)
+		poolConfig, err := pgxpool.ParseConfig(connUrl)
 		if err != nil {
-			log.Fatalf("Failed to connect to database: %v", err)
+			log.Fatalln("Unable to parse connection url:", err)
 		}
 
-		pg.SetMaxOpenConns(25)
-		pg.SetMaxIdleConns(25)
+		db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
+		if err != nil {
+			log.Fatalln("Unable to create connection pool:", err)
+		}
+
+		// dsn := fmt.Sprintf(
+		// 	"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		// 	os.Getenv("DB_HOST"),
+		// 	os.Getenv("DB_USER"),
+		// 	os.Getenv("DB_PASSWORD"),
+		// 	os.Getenv("DB_NAME"),
+		// 	os.Getenv("DB_PORT"),
+		// )
+
+		// pg, err := sql.Open("postgres", dsn)
+		// if err != nil {
+		// 	log.Fatalf("Failed to connect to database: %v", err)
+		// }
+
+		// pg.SetMaxOpenConns(25)
+		// pg.SetMaxIdleConns(25)
 
 		// warmup
 		var ids []string
@@ -46,7 +65,8 @@ func NewPostgresDatabase() *sql.DB {
 				[]string{"tag1", "tag2"},
 			)
 			ids = append(ids, person.ID)
-			_, err := pg.Exec(
+			_, err := db.Exec(
+				context.Background(),
 				peopledb.InsertPersonQuery,
 				person.ID,
 				person.ID[:30],
@@ -60,7 +80,8 @@ func NewPostgresDatabase() *sql.DB {
 		}
 
 		for _, id := range ids {
-			_, err := pg.Exec(
+			_, err := db.Exec(
+				context.Background(),
 				"DELETE FROM people WHERE id = $1",
 				id,
 			)
@@ -69,11 +90,9 @@ func NewPostgresDatabase() *sql.DB {
 			}
 		}
 
-		if err := pg.Ping(); err != nil {
+		if err := db.Ping(context.Background()); err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
-
-		db = pg
 	})
 
 	return db

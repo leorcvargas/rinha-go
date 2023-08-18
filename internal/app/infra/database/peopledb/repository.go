@@ -1,15 +1,18 @@
 package peopledb
 
 import (
+	"context"
 	"database/sql"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/rueidis"
 )
 
 type PersonRepository struct {
-	db         *sql.DB
+	db         *pgxpool.Pool
 	cache      *PeopleDbCache
 	insertChan chan people.Person
 	mem2       *Mem2
@@ -47,6 +50,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	var strStack string
 
 	err = p.db.QueryRow(
+		context.Background(),
 		SelectPersonByIDQuery,
 		id,
 	).Scan(
@@ -59,7 +63,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	person.Stack = strings.Split(strStack, ",")
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, people.ErrPersonNotFound
 		}
 
@@ -95,9 +99,13 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
 
-	err := p.db.QueryRow(
-		CountPeopleQuery,
-	).Scan(&total)
+	err := p.db.
+		QueryRow(
+			context.Background(),
+			CountPeopleQuery,
+		).
+		Scan(&total)
+
 	if err != nil {
 		return 0, err
 	}
@@ -132,7 +140,7 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person) people.Repository {
+func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person) people.Repository {
 	return &PersonRepository{
 		db:         db,
 		cache:      cache,
