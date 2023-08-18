@@ -9,7 +9,7 @@ CREATE TABLE
         "name" varchar(100) NOT NULL,
         birthdate date NOT NULL,
         stack text NULL,
-        trgm_q text NOT NULL
+        trgm_q text NOT NULL,
         CONSTRAINT people_nickname_key UNIQUE (nickname)
     );
 
