@@ -74,28 +74,28 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
+func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+	result := p.mem2.Search(term)
+	return result, nil
+}
+
 // func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-// 	result := p.mem2.Search(term)
-// 	return result, nil
+// 	return p.searchTrigram(term)
 // }
 
-func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	return p.searchTrigram(term)
-}
+// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+// 	rows, err := p.db.Query(
+// 		context.Background(),
+// 		SearchPeopleTrgmQuery,
+// 		term,
+// 	)
+// 	if err != nil {
+// 		log.Errorf("Error executing trigram search: %v", err)
+// 		return nil, err
+// 	}
 
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-	rows, err := p.db.Query(
-		context.Background(),
-		SearchPeopleTrgmQuery,
-		term,
-	)
-	if err != nil {
-		log.Errorf("Error executing trigram search: %v", err)
-		return nil, err
-	}
-
-	return mapSearchResult(rows)
-}
+// 	return mapSearchResult(rows)
+// }
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64
