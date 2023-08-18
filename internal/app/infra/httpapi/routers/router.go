@@ -1,11 +1,8 @@
 package routers
 
 import (
-	"os"
-
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 )
 
 type Router interface {
@@ -18,13 +15,15 @@ func MakeRouter(
 	cfg := fiber.Config{
 		AppName:       "rinha-go by @leorcvargas",
 		CaseSensitive: true,
+		JSONEncoder:   sonic.Marshal,
+		JSONDecoder:   sonic.Unmarshal,
 	}
 
-	if os.Getenv("ENABLE_SONIC_JSON") == "1" {
-		log.Info("Loading Sonic JSON into the router")
-		cfg.JSONEncoder = sonic.Marshal
-		cfg.JSONDecoder = sonic.Unmarshal
-	}
+	// if os.Getenv("ENABLE_SONIC_JSON") == "1" {
+	// 	log.Info("Loading Sonic JSON into the router")
+	// 	cfg.JSONEncoder = sonic.Marshal
+	// 	cfg.JSONDecoder = sonic.Unmarshal
+	// }
 
 	r := fiber.New(cfg)
 

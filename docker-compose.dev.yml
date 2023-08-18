@@ -1,7 +1,7 @@
 version: "3.5"
 services:
   db:
-    image: postgres
+    build: ./scripts/postgres
     hostname: db
     environment:
       POSTGRES_PASSWORD: postgres
@@ -18,13 +18,14 @@ services:
           memory: "0.4GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
-      - ./postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      # - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./scripts/postgres/:/docker-entrypoint-initdb.d/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 15s
       timeout: 25s
-    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    # command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    command: ["postgres", "-c", "config_file=/docker-entrypoint-initdb.d/postgresql.conf"]
 
   api1:
     build: .
