@@ -108,7 +108,6 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 			person.Name,
 			person.Birthdate,
 			person.StackString(),
-			person.Name+person.Nickname+person.StackString(),
 		)
 	}
 
