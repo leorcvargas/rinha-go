@@ -57,14 +57,28 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	t := top("cache-set")
 	defer t()
 
-	item, err := sonic.MarshalString(person)
-	if err != nil {
-		return nil, err
-	}
+	setPersonCmd := p.client.
+		B().
+		Hmset().
+		Key(person.ID).
+		FieldValue().
+		FieldValue("id", person.ID).
+		FieldValue("nickname", person.Nickname).
+		FieldValue("name", person.Name).
+		FieldValue("birthdate", person.Birthdate).
+		FieldValue("stack", person.StackString()).
+		Build()
+	setNicknameCmd := p.client.
+		B().
+		Setbit().
+		Key(person.Nickname).
+		Offset(0).
+		Value(1).
+		Build()
 
 	cmds := make(rueidis.Commands, 0, 2)
-	cmds = append(cmds, p.client.B().Set().Key(person.ID).Value(item).Ex(time.Hour).Build())
-	cmds = append(cmds, p.client.B().Set().Key(person.Nickname).Value("1").Ex(time.Hour).Build())
+	cmds = append(cmds, setPersonCmd)
+	cmds = append(cmds, setNicknameCmd)
 
 	for _, res := range p.client.DoMulti(ctx, cmds...) {
 		err := res.Error()
