@@ -13,15 +13,15 @@ CREATE TABLE
         CONSTRAINT people_nickname_key UNIQUE (nickname)
     );
 
-ALTER TABLE public.people
+-- ALTER TABLE public.people
 
-ADD
+-- ADD
 
-    COLUMN trgm_q text GENERATED ALWAYS AS (
+--     COLUMN trgm_q text GENERATED ALWAYS AS (
 
-        nickname || ' ' || "name" || ' ' || stack
+--         nickname || ' ' || "name" || ' ' || stack
 
-    ) STORED;
+--     ) STORED;
 
 
 CREATE INDEX
