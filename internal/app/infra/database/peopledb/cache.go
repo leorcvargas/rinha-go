@@ -25,13 +25,8 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 
 	getCmd := p.client.
 		B().
-		Hmget().
-		Key(key).
-		Field("id").
-		Field("nickname").
-		Field("name").
-		Field("birthdate").
-		Field("stack").
+		Get().
+		Key("person:" + key).
 		Cache()
 
 	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
@@ -55,7 +50,7 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	getNicknameCmd := p.client.
 		B().
 		Getbit().
-		Key(nickname).
+		Key("nickname:" + nickname).
 		Offset(0).
 		Cache()
 
@@ -66,21 +61,22 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	t := top("cache-set")
 	defer t()
 
+	item, err := sonic.MarshalString(person)
+	if err != nil {
+		return nil, err
+	}
+
 	setPersonCmd := p.client.
 		B().
-		Hmset().
-		Key(person.ID).
-		FieldValue().
-		FieldValue("id", person.ID).
-		FieldValue("nickname", person.Nickname).
-		FieldValue("name", person.Name).
-		FieldValue("birthdate", person.Birthdate).
-		FieldValue("stack", person.StackString()).
+		Set().
+		Key("person:" + person.ID).
+		Value(item).
+		Ex(time.Hour).
 		Build()
 	setNicknameCmd := p.client.
 		B().
 		Setbit().
-		Key(person.Nickname).
+		Key("nickname:" + person.Nickname).
 		Offset(0).
 		Value(1).
 		Build()
