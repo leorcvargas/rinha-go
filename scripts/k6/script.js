@@ -30,9 +30,7 @@ function makeTerm() {
 }
 
 export const options = {
-  stages: [
-    { duration: "10m", target: 1000 },
-  ],
+  stages: [{ duration: "5m", target: 1000 }],
 };
 
 export default function () {
@@ -40,11 +38,40 @@ export default function () {
 
   let res1 = http.post(`${baseUrl}/pessoas`, JSON.stringify(makePerson()), {
     verb: "post",
+    tags: { name: "Criação" },
     headers: {
       "Content-Type": "application/json",
     },
   });
   check(res1, {
     "status is 201": (r) => r.status === 201,
+  });
+
+  sleep(1);
+
+  let res2 = http.get(`${baseUrl}${res1.headers["Location"]}`, {
+    verb: "get",
+    tags: { name: "Consulta" },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  check(res2, {
+    "status is 200": (r) => r.status === 200,
+  });
+
+  sleep(1);
+
+  let randomTerm = makeTerm();
+
+  let res3 = http.get(`${baseUrl}/pessoas?t=${randomTerm}`, {
+    verb: "get",
+    tags: { name: "Busca" },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  check(res3, {
+    "status is 200": (r) => r.status === 200,
   });
 }

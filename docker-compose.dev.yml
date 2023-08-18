@@ -118,6 +118,8 @@ services:
     image: eqalpha/keydb:latest
     ports:
       - "6379:6379"
+    volumes:
+      - ./scripts/keydb/keydb.conf:/etc/keydb/keydb.conf:ro
     deploy:
       resources:
         limits:
@@ -126,8 +128,7 @@ services:
         reservations:
           cpus: '0.05'
           memory: 64M
-    command: ["keydb-server", "--save", '""', "--appendonly", "no"]
-    # command: ["redis-server", "--save", '""', "--appendonly", "no"]
+    command: ["keydb-server", "--save", '""', "--appendonly", "no", "--config", "/etc/keydb/keydb.conf"]
 
 volumes:
   postgres-db:
