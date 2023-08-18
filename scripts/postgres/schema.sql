@@ -24,5 +24,5 @@ CREATE TABLE
 --     ) STORED;
 
 
-CREATE INDEX
-    IF NOT EXISTS CONCURRENTLY idx_people_trigram ON public.people USING gist (trgm_q gist_trgm_ops);
+CREATE INDEX CONCURRENTLY
+    IF NOT EXISTS idx_people_trigram ON public.people USING gist (trgm_q gist_trgm_ops);
