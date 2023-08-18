@@ -15,7 +15,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: "0.4GB"
+          memory: "1GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
       # - ./postgresql.conf:/etc/postgresql/postgresql.conf
@@ -47,7 +47,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: "0.8GB"
+          memory: "0.5GB"
 
   api2:
     build: .
@@ -69,7 +69,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: "0.8GB"
+          memory: "0.5GB"
 
   nginx:
     image: nginx
