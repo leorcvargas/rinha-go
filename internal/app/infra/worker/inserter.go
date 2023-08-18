@@ -37,14 +37,6 @@ func (i *Inserter) Run() {
 			batch[batchLen] = person
 			batchLen++
 
-			// if batchLen >= maxBatchSize {
-			// 	i.processBatch(batch, batchLen)
-			// 	a.Free()
-			// 	a = arena.NewArena()
-			// 	batch = arena.MakeSlice[people.Person](a, maxBatchSize, maxBatchSize)
-			// 	batchLen = 0
-			// }
-
 		case <-tickProcess:
 			if batchLen > 0 {
 				i.processBatch(batch, batchLen)
