@@ -37,6 +37,7 @@ func (i *Inserter) Run() {
 		case person := <-i.insertChan:
 			batch[batchLen] = person
 			batchLen++
+			i.cache.Set(person.ID, &person)
 
 			if batchLen >= maxBatchSize {
 				i.processBatch(batch, batchLen)
