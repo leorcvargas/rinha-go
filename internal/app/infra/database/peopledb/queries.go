@@ -1,7 +1,7 @@
 package peopledb
 
 const (
-	InsertPersonQuery = "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES ($1, $2, $3, $4, $5, $6);"
+	InsertPersonQuery = "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES ($1, $2, $3, $4, $5);"
 
 	SelectPersonByIDQuery = "SELECT id, nickname, name, birthdate, stack FROM people WHERE id = $1;"
 

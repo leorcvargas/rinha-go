@@ -14,7 +14,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.75"
+          cpus: "0.2"
           memory: "1GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
@@ -53,7 +53,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.4"
           memory: "0.5GB"
 
   api2:
@@ -79,7 +79,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.4"
           memory: "0.5GB"
 
   nginx:
@@ -95,31 +95,31 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.20"
+          cpus: "0.3"
           memory: "0.5GB"
 
   cache:
-    image: redis:7
-    # image: eqalpha/keydb:latest
+    # image: redis:7
+    image: eqalpha/keydb:latest
     hostname: cache
     ports:
       - "6379:6379"
     deploy:
       resources:
         limits:
-          cpus: "0.15"
+          cpus: "0.2"
           memory: "0.5GB"
-    command: ["redis-server", "--save", '""', "--appendonly", "no"]
-    # command:
-    #   [
-    #     "keydb-server",
-    #     "--save",
-    #     '""',
-    #     "--appendonly",
-    #     "no",
-    #     "--server-threads",
-    #     "2",
-    #   ]
+    # command: ["redis-server", "--save", '""', "--appendonly", "no"]
+    command:
+      [
+        "keydb-server",
+        "--save",
+        '""',
+        "--appendonly",
+        "no",
+        "--server-threads",
+        "2",
+      ]
 
 volumes:
   postgres-db:

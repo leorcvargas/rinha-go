@@ -5,11 +5,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
+	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
 type Inserter struct {
@@ -63,29 +65,29 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	// payload, err := sonic.MarshalString(batch[:batchLength])
-	// if err != nil {
-	// 	log.Errorf("Error marshalling batch: %v", err)
-	// 	return err
-	// }
+	payload, err := sonic.MarshalString(batch[:batchLength])
+	if err != nil {
+		log.Errorf("Error marshalling batch: %v", err)
+		return err
+	}
 
-	// err = i.cache.
-	// 	Cache().
-	// 	Do(
-	// 		context.Background(),
-	// 		i.cache.
-	// 			Cache().
-	// 			B().
-	// 			Publish().
-	// 			Channel(pubsub.EventPersonInsert).
-	// 			Message(payload).
-	// 			Build(),
-	// 	).
-	// 	Error()
-	// if err != nil {
-	// 	log.Errorf("Error publishing batch: %v", err)
-	// 	return err
-	// }
+	err = i.cache.
+		Cache().
+		Do(
+			context.Background(),
+			i.cache.
+				Cache().
+				B().
+				Publish().
+				Channel(pubsub.EventPersonInsert).
+				Message(payload).
+				Build(),
+		).
+		Error()
+	if err != nil {
+		log.Errorf("Error publishing batch: %v", err)
+		return err
+	}
 
 	return nil
 }
