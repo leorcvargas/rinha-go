@@ -14,14 +14,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.24"
+          cpus: "0.4"
           memory: "1GB"
-        reservations:
-          cpus: "0.10"
-          memory: 128M
     volumes:
       - postgres-db:/var/lib/postgresql/data
-      # - ./postgresql.conf:/etc/postgresql/postgresql.conf
       - ./scripts/postgres/:/docker-entrypoint-initdb.d/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -57,7 +53,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.38"
+          cpus: "0.3"
           memory: "0.5GB"
 
   api2:
@@ -83,7 +79,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.38"
+          cpus: "0.3"
           memory: "0.5GB"
 
   nginx:
