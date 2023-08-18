@@ -14,7 +14,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.65"
+          cpus: "0.5"
           memory: "1GB"
         reservations:
           cpus: "0.10"
@@ -46,6 +46,10 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=rinha
       - DB_PORT=5432
+      - CPU_PROFILE=/app/prof/cpu-1.prof
+      - MEM_PROFILE=/app/prof/mem-1.prof
+    volumes:
+      - ./prof:/app/prof
     depends_on:
       db:
         condition: service_healthy
@@ -54,7 +58,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.25"
           memory: "0.5GB"
         reservations:
           cpus: "0.10"
@@ -71,6 +75,10 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=rinha
       - DB_PORT=5432
+      - CPU_PROFILE=/app/prof/cpu-2.prof
+      - MEM_PROFILE=/app/prof/mem-2.prof
+    volumes:
+      - ./prof:/app/prof
     depends_on:
       db:
         condition: service_healthy
@@ -79,7 +87,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.25"
           memory: "0.5GB"
         reservations:
           cpus: "0.10"
@@ -112,7 +120,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
+          cpus: "0.20"
           memory: "0.5GB"
         reservations:
           cpus: '0.05'

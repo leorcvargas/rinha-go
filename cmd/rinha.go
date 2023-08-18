@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"runtime/pprof"
+
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -16,6 +19,22 @@ import (
 )
 
 func main() {
+	// profile cpu
+	f, err := os.Create(os.Getenv("CPU_PROFILE"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
+	// profile mem
+	mf, err := os.Create(os.Getenv("MEM_PROFILE"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	pprof.WriteHeapProfile(mf)
+
 	uuid.EnableRandPool()
 
 	app := fx.New(
