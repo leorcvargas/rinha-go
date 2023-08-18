@@ -12,15 +12,5 @@ CREATE TABLE
         search text NOT NULL
     );
 
--- ALTER TABLE public.people
-
--- ADD
-
---     COLUMN trgm_q text GENERATED ALWAYS AS (
-
---         nickname || ' ' || "name" || ' ' || stack
-
---     ) STORED;
-
 CREATE INDEX
     CONCURRENTLY IF NOT EXISTS idx_people_trigram ON public.people USING gist (search gist_trgm_ops);
