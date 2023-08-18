@@ -10,7 +10,7 @@ const (
 	LIMIT 50;`
 
 	SearchPeopleTrgmQuery = `SELECT id, nickname, name, birthdate, stack FROM people p
-	WHERE p.trgm_q LIKE '%' || $1 || '%'
+	WHERE p.trgm_q ILIKE '%' || $1 || '%'
 	LIMIT 50;`
 
 	CountPeopleQuery = "SELECT COUNT(*) FROM people;"
