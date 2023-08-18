@@ -71,6 +71,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	cachedPerson, err := p.cache.Get(id)
 
 	if err != nil && !rueidis.IsRedisNil(err) {
+		log.Errorf("Error getting person from cache: %v", err)
 		return nil, err
 	}
 
@@ -98,6 +99,8 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 		if err == pgx.ErrNoRows {
 			return nil, people.ErrPersonNotFound
 		}
+
+		log.Errorf("Error querying person: %v", err)
 
 		return nil, err
 	}
@@ -139,6 +142,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 		Scan(&total)
 
 	if err != nil {
+		log.Errorf("Error counting people: %v", err)
 		return 0, err
 	}
 

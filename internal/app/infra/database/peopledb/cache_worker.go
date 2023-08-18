@@ -47,11 +47,9 @@ func (w Worker) Start() {
 		for {
 			// register the current worker into the worker queue.
 			w.WorkerPool <- w.JobChannel
-			log.Info("Worker registered in worker pool")
 
 			select {
 			case job := <-w.JobChannel:
-				log.Infof("Worker %d: Received job %s", w.WorkerPool, job.Payload.ID)
 				if _, err := w.cache.Set(job.Payload.ID, job.Payload); err != nil {
 					log.Errorf("Error inserting person in cache: %v", err)
 				}
