@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 
+	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
+	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 	_ "github.com/lib/pq"
 )
 
@@ -33,6 +36,40 @@ func NewPostgresDatabase() *sql.DB {
 
 		pg.SetMaxOpenConns(25)
 		pg.SetMaxIdleConns(25)
+
+		// warmup
+		var ids []string
+		for i := 0; i < 10; i++ {
+			person := people.NewPerson(
+				fmt.Sprintf("nickname-%d", i),
+				fmt.Sprintf("name-%d", i),
+				"1970-01-01",
+				[]string{"tag1", "tag2"},
+			)
+			ids = append(ids, person.ID)
+			_, err := pg.Exec(
+				peopledb.InsertPersonQuery,
+				person.ID,
+				person.Nickname,
+				person.Name,
+				person.Birthdate,
+				person.StackString(),
+				person.Nickname+person.Name+strings.Join(person.Stack, ""),
+			)
+			if err != nil {
+				log.Fatalf("Failed to warmup database: %v", err)
+			}
+		}
+
+		for _, id := range ids {
+			_, err := pg.Exec(
+				"DELETE FROM people WHERE id = $1",
+				id,
+			)
+			if err != nil {
+				log.Fatalf("Failed to delete warmup data from the database: %v", err)
+			}
+		}
 
 		if err := pg.Ping(); err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
