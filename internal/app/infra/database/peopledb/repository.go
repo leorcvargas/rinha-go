@@ -20,13 +20,16 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	t := top("db-create")
 	defer t()
 
+	stackText := person.StackString()
+
 	_, err := p.db.Exec(
 		InsertPersonQuery,
 		person.ID,
 		person.Nickname,
 		person.Name,
 		person.Birthdate,
-		person.StackString(),
+		stackText,
+		person.Nickname+person.Name+stackText,
 	)
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == "23505" {
