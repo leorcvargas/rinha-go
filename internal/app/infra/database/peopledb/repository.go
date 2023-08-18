@@ -32,10 +32,14 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	)
 
 	if err != nil {
+		log.Errorf("Error inserting person: %v", err)
 		return nil, err
 	}
 
-	go p.cache.Set(person.ID, person)
+	_, err = p.cache.Set(person.ID, person)
+	if err != nil {
+		log.Errorf("Error inserting person in cache: %v", err)
+	}
 
 	return person, nil
 
