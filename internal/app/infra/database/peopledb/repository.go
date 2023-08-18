@@ -20,20 +20,39 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	_, err := p.db.Exec(
+		context.Background(),
+		InsertPersonQuery,
+		person.ID,
+		person.Nickname,
+		person.Name,
+		person.Birthdate,
+		person.StackString(),
+		strings.ToLower(person.Nickname+" "+person.Name+" "+person.StackString()),
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if nicknameTaken {
-		return nil, people.ErrNicknameTaken
-	}
-
-	p.cache.Set(person.ID, person)
-
-	p.insertChan <- *person
+	go p.cache.Set(person.ID, person)
 
 	return person, nil
+
+	// nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// if nicknameTaken {
+	// 	return nil, people.ErrNicknameTaken
+	// }
+
+	// p.cache.Set(person.ID, person)
+
+	// p.insertChan <- *person
+
+	// return person, nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
@@ -74,28 +93,28 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
+// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+// 	result := p.mem2.Search(term)
+// 	return result, nil
+// }
+
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	result := p.mem2.Search(term)
-	return result, nil
+	return p.searchTrigram(term)
 }
 
-// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-// 	return p.searchTrigram(term)
-// }
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		context.Background(),
+		SearchPeopleTrgmQuery,
+		term,
+	)
+	if err != nil {
+		log.Errorf("Error executing trigram search: %v", err)
+		return nil, err
+	}
 
-// func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
-// 	rows, err := p.db.Query(
-// 		context.Background(),
-// 		SearchPeopleTrgmQuery,
-// 		term,
-// 	)
-// 	if err != nil {
-// 		log.Errorf("Error executing trigram search: %v", err)
-// 		return nil, err
-// 	}
-
-// 	return mapSearchResult(rows)
-// }
+	return mapSearchResult(rows)
+}
 
 func (p *PersonRepository) CountAll() (int64, error) {
 	var total int64

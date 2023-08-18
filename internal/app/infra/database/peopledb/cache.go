@@ -64,25 +64,33 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 		Value(item).
 		Ex(time.Hour).
 		Build()
-	setNicknameCmd := p.client.
-		B().
-		Setbit().
-		Key("nickname:" + person.Nickname).
-		Offset(0).
-		Value(1).
-		Build()
 
-	cmds := make(rueidis.Commands, 0, 2)
-	cmds = append(cmds, setPersonCmd)
-	cmds = append(cmds, setNicknameCmd)
+	res := p.client.Do(ctx, setPersonCmd)
+	err = res.Error()
 
-	for _, res := range p.client.DoMulti(ctx, cmds...) {
-		err := res.Error()
-
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
+
+	// setNicknameCmd := p.client.
+	// 	B().
+	// 	Setbit().
+	// 	Key("nickname:" + person.Nickname).
+	// 	Offset(0).
+	// 	Value(1).
+	// 	Build()
+
+	// cmds := make(rueidis.Commands, 0, 2)
+	// cmds = append(cmds, setPersonCmd)
+	// cmds = append(cmds, setNicknameCmd)
+
+	// for _, res := range p.client.DoMulti(ctx, cmds...) {
+	// 	err := res.Error()
+
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	return person, nil
 }
