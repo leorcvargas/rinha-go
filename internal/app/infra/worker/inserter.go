@@ -80,7 +80,7 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	i.cache.
+	err = i.cache.
 		Cache().
 		Do(
 			context.Background(),
@@ -91,7 +91,12 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 				Channel(pubsub.EventPersonInsert).
 				Message(payload).
 				Build(),
-		)
+		).
+		Error()
+	if err != nil {
+		log.Errorf("Error publishing batch: %v", err)
+		return err
+	}
 
 	// context.Background(),
 	// pubsub.EventPersonInsert,
