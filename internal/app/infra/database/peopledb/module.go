@@ -9,6 +9,8 @@ var Module = fx.Provide(
 	NewPeopleDbCache,
 	NewMemDb,
 	NewMem2,
+	NewDispatcher,
+	NewJobQueue,
 	fx.Annotate(
 		NewPersonRepository,
 		fx.As(new(people.Repository)),

@@ -22,6 +22,6 @@ COPY --from=builder /app/bin/rinha .
 
 ENV GOGC 1000
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+ENV GOMAXPROCS 8
 
 CMD ["./rinha"]

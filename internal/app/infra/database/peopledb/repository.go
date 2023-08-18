@@ -19,6 +19,7 @@ type PersonRepository struct {
 	cache      *PeopleDbCache
 	insertChan chan people.Person
 	mem2       *Mem2
+	jobQueue   JobQueue
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
@@ -42,10 +43,11 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 		return nil, err
 	}
 
-	_, err = p.cache.Set(person.ID, person)
-	if err != nil {
-		log.Errorf("Error inserting person in cache: %v", err)
-	}
+	// _, err = p.cache.Set(person.ID, person)
+	// if err != nil {
+	// 	log.Errorf("Error inserting person in cache: %v", err)
+	// }
+	p.jobQueue <- Job{Payload: person}
 
 	return person, nil
 
@@ -171,11 +173,12 @@ func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person) people.Repository {
+func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person, jobQueue JobQueue) people.Repository {
 	return &PersonRepository{
 		db:         db,
 		cache:      cache,
 		insertChan: insertChan,
 		mem2:       mem2,
+		jobQueue:   jobQueue,
 	}
 }
