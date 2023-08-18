@@ -16,22 +16,6 @@ import (
 )
 
 func main() {
-	// profile cpu
-	// f, err := os.Create(os.Getenv("CPU_PROFILE"))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
-
-	// // profile mem
-	// mf, err := os.Create(os.Getenv("MEM_PROFILE"))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer f.Close()
-	// pprof.WriteHeapProfile(mf)
-
 	uuid.EnableRandPool()
 
 	app := fx.New(
@@ -46,10 +30,10 @@ func main() {
 			log.Info("Starting worker.Inserter")
 			go worker.Run()
 		}),
-		// fx.Invoke(func(subscriber *pubsub.PersonInsertSubscriber) {
-		// 	log.Info("Starting pubsub.Subscriber")
-		// 	go subscriber.Subscribe()
-		// }),
+		fx.Invoke(func(subscriber *pubsub.PersonInsertSubscriber) {
+			log.Info("Starting pubsub.Subscriber")
+			go subscriber.Subscribe()
+		}),
 		fx.Invoke(func(*fasthttp.Server) {}),
 		fx.NopLogger,
 	)

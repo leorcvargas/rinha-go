@@ -2,14 +2,16 @@ package worker
 
 import (
 	"arena"
+	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
+	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/pubsub"
 )
 
 type Inserter struct {
@@ -71,37 +73,38 @@ func (i *Inserter) processBatch(batch []people.Person, batchLength int) error {
 		return err
 	}
 
-	// TODO uncomment if the search in mem is coming back
-	// payload, err := sonic.MarshalString(batch[:batchLength])
-	// if err != nil {
-	// 	log.Errorf("Error marshalling batch: %v", err)
-	// 	return err
-	// }
+	payload, err := sonic.MarshalString(batch[:batchLength])
+	if err != nil {
+		log.Errorf("Error marshalling batch: %v", err)
+		return err
+	}
 
-	// err = i.cache.
-	// 	Cache().
-	// 	Do(
-	// 		context.Background(),
-	// 		i.cache.
-	// 			Cache().
-	// 			B().
-	// 			Publish().
-	// 			Channel(pubsub.EventPersonInsert).
-	// 			Message(payload).
-	// 			Build(),
-	// 	).
-	// 	Error()
-	// if err != nil {
-	// 	log.Errorf("Error publishing batch: %v", err)
-	// 	return err
-	// }
+	err = i.cache.
+		Cache().
+		Do(
+			context.Background(),
+			i.cache.
+				Cache().
+				B().
+				Publish().
+				Channel(pubsub.EventPersonInsert).
+				Message(payload).
+				Build(),
+		).
+		Error()
+	if err != nil {
+		log.Errorf("Error publishing batch: %v", err)
+		return err
+	}
 
 	return nil
 }
 
 func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
+	totalCols := 5
+
 	valueStrings := make([]string, batchLength, batchLength)
-	valueArgs := make([]interface{}, batchLength*6, batchLength*6)
+	valueArgs := make([]interface{}, batchLength*totalCols, batchLength*totalCols)
 
 	for index := 0; index < batchLength; index++ {
 		person := batch[index]
@@ -110,16 +113,17 @@ func (i *Inserter) insertBatch(batch []people.Person, batchLength int) error {
 			continue
 		}
 
-		valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", index*6+1, index*6+2, index*6+3, index*6+4, index*6+5, index*6+6)
-		valueArgs[index*6] = person.ID
-		valueArgs[index*6+1] = person.Nickname
-		valueArgs[index*6+2] = person.Name
-		valueArgs[index*6+3] = person.Birthdate
-		valueArgs[index*6+4] = person.StackString()
-		valueArgs[index*6+5] = person.Nickname + person.Name + strings.Join(person.Stack, "")
+		colIndex := index * totalCols
+
+		valueStrings[index] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", colIndex+1, colIndex+2, colIndex+3, colIndex+4, colIndex+5)
+		valueArgs[colIndex] = person.ID
+		valueArgs[colIndex+1] = person.Nickname
+		valueArgs[colIndex+2] = person.Name
+		valueArgs[colIndex+3] = person.Birthdate
+		valueArgs[colIndex+4] = person.StackString()
 	}
 
-	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack, search) VALUES "
+	stmt := "INSERT INTO people (id, nickname, name, birthdate, stack) VALUES "
 	for i := 0; i < len(valueStrings); i++ {
 		if i == 0 {
 			stmt += valueStrings[i]
