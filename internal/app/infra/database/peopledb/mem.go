@@ -1,139 +1,101 @@
 package peopledb
 
 import (
-	"errors"
+	"arena"
 	"strings"
 
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/hashicorp/go-memdb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
-var ErrMemDbNotFound = errors.New("memdb not found")
+const maxMemItems = 100000
 
-type MemDb struct {
-	db *memdb.MemDB
-}
-
-type PersonMem struct {
+type PersonItem struct {
 	Key string
 	people.Person
 }
 
-func (m *MemDb) DB() *memdb.MemDB {
-	return m.db
+type Mem struct {
+	list []PersonItem
 }
 
-func (m *MemDb) Insert(person people.Person) error {
-	txn := m.db.Txn(true)
-	defer txn.Abort()
-
+func (m *Mem) Add(person people.Person) {
 	key := person.Nickname + " " + person.Name + " " + person.StackString()
 	key = strings.ToLower(key)
-	personMem := PersonMem{
+	item := PersonItem{
 		Key:    key,
 		Person: person,
 	}
 
-	err := txn.Insert("people", personMem)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
+	m.list = append(m.list, item)
 }
 
-func (m *MemDb) BulkInsert(people []people.Person) error {
-	txn := m.db.Txn(true)
-	defer txn.Abort()
+func (m *Mem) AddBatch(batch []people.Person) {
+	a := arena.NewArena()
+	defer a.Free()
 
-	for _, person := range people {
-		key := person.Nickname + " " + person.Name + " " + person.StackString()
-		key = strings.ToLower(key)
-		personMem := PersonMem{
+	batchSize := len(batch)
+
+	input := arena.MakeSlice[PersonItem](a, batchSize, batchSize)
+
+	for i := 0; i < batchSize; i++ {
+		item := batch[i]
+
+		key := strings.ToLower(item.Nickname + item.Name + strings.Join(item.Stack, ""))
+
+		input[i] = PersonItem{
 			Key:    key,
-			Person: person,
-		}
-
-		err := txn.Insert("people", personMem)
-		if err != nil {
-			return err
+			Person: item,
 		}
 	}
 
-	txn.Commit()
-
-	return nil
+	m.list = append(m.list, arena.Clone(input)...)
 }
 
-func (m *MemDb) Search(term string) ([]people.Person, error) {
-	txn := m.db.Txn(false)
-	defer txn.Abort()
+func (m *Mem) Search(query string) []people.Person {
+	query = strings.ToLower(query)
 
-	it, err := txn.Get("people", "id")
-	if err != nil {
-		return nil, err
+	limit := 50
+	size := len(m.list)
+	result := make([]people.Person, 0, limit)
+
+	if size == 1 {
+		if strings.Contains(m.list[0].Key, query) {
+			result = append(result, m.list[0].Person)
+		}
+		return result
 	}
 
-	var people []people.Person
+	front := 0
+	back := size - 1
 
-	for {
-		if len(people) >= 50 {
+	for i := 0; i < size; i++ {
+		if len(result) >= limit {
 			break
 		}
 
-		raw := it.Next()
-		if raw == nil {
+		if strings.Contains(m.list[front].Key, query) {
+			result = append(result, m.list[front].Person)
+		}
+
+		if strings.Contains(m.list[back].Key, query) {
+			result = append(result, m.list[back].Person)
+		}
+
+		front++
+		back--
+
+		if front > back {
 			break
 		}
-
-		personMem := raw.(PersonMem)
-		if strings.Contains(personMem.Key, term) {
-			people = append(people, personMem.Person)
-		}
 	}
 
-	return people, nil
+	return result
 }
 
-func (m *MemDb) Get(key string) (*people.Person, error) {
-	txn := m.db.Txn(false)
-	defer txn.Abort()
-
-	raw, err := txn.First("people", "id", key)
-	if err != nil {
-		return nil, err
+func NewMem() *Mem {
+	mem := &Mem{
+		list: make([]PersonItem, 0, maxMemItems),
 	}
 
-	if raw == nil {
-		return nil, ErrMemDbNotFound
-	}
-
-	personMem := raw.(PersonMem)
-	return &personMem.Person, nil
-}
-
-func NewMemDb() *MemDb {
-	schema := &memdb.DBSchema{
-		Tables: map[string]*memdb.TableSchema{
-			"people": {
-				Name: "people",
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "Key"},
-					},
-				},
-			},
-		},
-	}
-
-	db, err := memdb.NewMemDB(schema)
-	if err != nil {
-		log.Fatalf("Failed to create memdb: %v", err)
-	}
-
-	return &MemDb{db: db}
+	return mem
 }
