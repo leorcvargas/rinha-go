@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database"
@@ -27,14 +26,14 @@ func main() {
 		people.Module,
 		worker.Module,
 		pubsub.Module,
-		fx.Invoke(func(worker *worker.Inserter) {
-			log.Info("Starting worker.Inserter")
-			go worker.Run()
-		}),
-		fx.Invoke(func(subscriber *pubsub.PersonInsertSubscriber) {
-			log.Info("Starting pubsub.Subscriber")
-			go subscriber.Subscribe()
-		}),
+		// fx.Invoke(func(worker *worker.Inserter) {
+		// 	log.Info("Starting worker.Inserter")
+		// 	go worker.Run()
+		// }),
+		// fx.Invoke(func(subscriber *pubsub.PersonInsertSubscriber) {
+		// 	log.Info("Starting pubsub.Subscriber")
+		// 	go subscriber.Subscribe()
+		// }),
 		// fx.Invoke(func(dispatcher *peopledb.Dispatcher) {
 		// 	go dispatcher.Run()
 		// }),
