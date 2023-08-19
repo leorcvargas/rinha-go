@@ -10,7 +10,7 @@ COPY . .
 
 ENV GOEXPERIMENT arenas
 
-RUN go build -v -o ./bin/rinha ./cmd/rinha.go
+RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM alpine:3.14.10
 
