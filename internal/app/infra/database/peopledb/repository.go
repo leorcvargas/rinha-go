@@ -2,13 +2,11 @@ package peopledb
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/rueidis"
@@ -23,49 +21,49 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	_, err := p.db.Exec(
-		context.Background(),
-		InsertPersonQuery,
-		person.ID,
-		person.Nickname,
-		person.Name,
-		person.Birthdate,
-		person.StackString(),
-		strings.ToLower(person.Nickname+" "+person.Name+" "+person.StackString()),
-	)
+	// _, err := p.db.Exec(
+	// 	context.Background(),
+	// 	InsertPersonQuery,
+	// 	person.ID,
+	// 	person.Nickname,
+	// 	person.Name,
+	// 	person.Birthdate,
+	// 	person.StackString(),
+	// 	strings.ToLower(person.Nickname+" "+person.Name+" "+person.StackString()),
+	// )
 
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, people.ErrNicknameTaken
-		}
-
-		return nil, err
-	}
-
-	_, err = p.cache.Set(person.ID, person)
-	if err != nil {
-		log.Errorf("Error inserting person in cache: %v", err)
-	}
-
-	return person, nil
-
-	// nicknameTaken, err := p.cache.GetNickname(person.Nickname)
 	// if err != nil {
+	// 	var pgErr *pgconn.PgError
+	// 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+	// 		return nil, people.ErrNicknameTaken
+	// 	}
+
 	// 	return nil, err
 	// }
 
-	// if nicknameTaken {
-	// 	return nil, people.ErrNicknameTaken
+	// _, err = p.cache.Set(person.ID, person)
+	// if err != nil {
+	// 	log.Errorf("Error inserting person in cache: %v", err)
 	// }
 
-	// // p.jobQueue <- Job{Payload: person}
+	// return person, nil
 
-	// p.cache.Set(person.ID, person)
+	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	if err != nil {
+		return nil, err
+	}
+
+	if nicknameTaken {
+		return nil, people.ErrNicknameTaken
+	}
+
+	p.jobQueue <- Job{Payload: person}
+
+	p.cache.Set(person.ID, person)
 
 	// p.insertChan <- *person
 
-	// return person, nil
+	return person, nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {

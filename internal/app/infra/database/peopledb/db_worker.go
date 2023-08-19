@@ -1,7 +1,10 @@
 package peopledb
 
 import (
-	"github.com/gofiber/fiber/v2/log"
+	"context"
+	"strings"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
@@ -28,15 +31,15 @@ type Worker struct {
 	WorkerPool chan chan Job
 	JobChannel chan Job
 	quit       chan bool
-	cache      *PeopleDbCache
+	db         *pgxpool.Pool
 }
 
-func NewWorker(workerPool chan chan Job, cache *PeopleDbCache) Worker {
+func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 	return Worker{
 		WorkerPool: workerPool,
 		JobChannel: make(chan Job),
 		quit:       make(chan bool),
-		cache:      cache,
+		db:         db,
 	}
 }
 
@@ -50,9 +53,16 @@ func (w Worker) Start() {
 
 			select {
 			case job := <-w.JobChannel:
-				if _, err := w.cache.Set(job.Payload.ID, job.Payload); err != nil {
-					log.Errorf("Error inserting person in cache: %v", err)
-				}
+				w.db.Exec(
+					context.Background(),
+					InsertPersonQuery,
+					job.Payload.ID,
+					job.Payload.Nickname,
+					job.Payload.Name,
+					job.Payload.Birthdate,
+					job.Payload.StackString(),
+					strings.ToLower(job.Payload.Nickname+" "+job.Payload.Name+" "+job.Payload.StackString()),
+				)
 
 			case <-w.quit:
 				// we have received a signal to stop
@@ -73,11 +83,11 @@ type Dispatcher struct {
 	maxWorkers int
 	// A pool of workers channels that are registered with the dispatcher
 	WorkerPool chan chan Job
-	cache      *PeopleDbCache
 	jobQueue   chan Job
+	db         *pgxpool.Pool
 }
 
-func NewDispatcher(cache *PeopleDbCache, jobQueue JobQueue) *Dispatcher {
+func NewDispatcher(db *pgxpool.Pool, jobQueue JobQueue) *Dispatcher {
 	maxWorkers := MaxWorker
 
 	pool := make(chan chan Job, maxWorkers)
@@ -86,14 +96,14 @@ func NewDispatcher(cache *PeopleDbCache, jobQueue JobQueue) *Dispatcher {
 		WorkerPool: pool,
 		maxWorkers: maxWorkers,
 		jobQueue:   jobQueue,
-		cache:      cache,
+		db:         db,
 	}
 }
 
 func (d *Dispatcher) Run() {
 	// starting n number of workers
 	for i := 0; i < d.maxWorkers; i++ {
-		worker := NewWorker(d.WorkerPool, d.cache)
+		worker := NewWorker(d.WorkerPool, d.db)
 		worker.Start()
 	}
 

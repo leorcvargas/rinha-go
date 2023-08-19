@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -56,6 +57,7 @@ func NewPostgresDatabase() *pgxpool.Pool {
 				person.Name,
 				person.Birthdate,
 				person.StackString(),
+				strings.ToLower(person.Nickname+" "+person.Name+" "+person.StackString()),
 			)
 			if err != nil {
 				log.Fatalf("Failed to warmup database: %v", err)

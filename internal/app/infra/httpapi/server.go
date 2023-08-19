@@ -34,12 +34,15 @@ func prof() func() {
 }
 
 func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *pgxpool.Pool) *fasthttp.Server {
-	var shutdown func()
+	// Uncomment if profiling is needed
+	// var shutdown func()
 
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
-				shutdown = prof()
+				// Uncomment if profiling is needed
+				// shutdown = prof()
+
 				log.Info("Starting the server...")
 				if err := router.Listen(":8080"); err != nil {
 					log.Fatalf("Error starting the server: %s\n", err)
@@ -48,7 +51,8 @@ func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *pgxpool.Pool) *fast
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			defer shutdown()
+			// Uncomment if profiling is needed
+			// defer shutdown()
 			log.Info("Stopping the server...")
 
 			return router.ShutdownWithContext(ctx)
