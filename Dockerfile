@@ -12,9 +12,9 @@ ENV GOEXPERIMENT arenas
 
 RUN go build -v -o ./bin/rinha ./cmd/rinha.go
 
-FROM golang:1.21
+FROM alpine:3.14.10
 
-RUN apt-get update && apt-get install -y dumb-init
+RUN apt-get update && apt-get install dumb-init
 
 EXPOSE 8080
 
@@ -22,6 +22,4 @@ COPY --from=builder /app/bin/rinha .
 
 ENV GOGC 1000
 
-ENV GOMAXPROCS 8
-
-CMD ["./rinha"]
+CMD ["/rinha"]
