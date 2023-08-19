@@ -2,19 +2,47 @@ package httpapi
 
 import (
 	"context"
-	"database/sql"
+	"os"
+	"runtime/pprof"
 
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 )
 
-func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.Server {
+func prof() func() {
+	f, err := os.Create(os.Getenv("CPU_PROFILE"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+
+	mf, err := os.Create(os.Getenv("MEM_PROFILE"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(mf)
+
+	return func() {
+		pprof.StopCPUProfile()
+		f.Close()
+		mf.Close()
+	}
+}
+
+func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *pgxpool.Pool) *fasthttp.Server {
+	// Uncomment if profiling is needed
+	// var shutdown func()
+
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
+				// Uncomment if profiling is needed
+				// shutdown = prof()
+
 				log.Info("Starting the server...")
 				if err := router.Listen(":8080"); err != nil {
 					log.Fatalf("Error starting the server: %s\n", err)
@@ -23,6 +51,10 @@ func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *sql.DB) *fasthttp.S
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
+			// Uncomment if profiling is needed
+			// defer shutdown()
+			log.Info("Stopping the server...")
+
 			return router.ShutdownWithContext(ctx)
 		},
 	})

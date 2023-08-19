@@ -1,24 +1,24 @@
 package peopledb
 
 import (
-	"database/sql"
+	"context"
 	"strings"
+	"time"
 
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 )
 
 type PersonRepository struct {
-	db         *sql.DB
-	cache      *PeopleDbCache
-	insertChan chan people.Person
-	mem2       *Mem2
+	db       *pgxpool.Pool
+	cache    *PeopleDbCache
+	jobQueue JobQueue
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	t := top("db-create")
-	defer t()
-
 	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
 	if err != nil {
 		return nil, err
@@ -28,21 +28,18 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 		return nil, people.ErrNicknameTaken
 	}
 
-	// p.cache.SetNickname(person.Nickname)
-	p.cache.Set(person.ID, person)
+	p.jobQueue <- Job{Payload: person}
 
-	p.insertChan <- *person
+	p.cache.Set(person.ID, person)
 
 	return person, nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
-	t := top("db-find-by-id")
-	defer t()
-
 	cachedPerson, err := p.cache.Get(id)
 
-	if err != nil && err != redis.Nil {
+	if err != nil && !rueidis.IsRedisNil(err) {
+		log.Errorf("Error getting person from cache: %v", err)
 		return nil, err
 	}
 
@@ -52,23 +49,28 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 
 	var person people.Person
 	var strStack string
+	var birthdate time.Time
 
 	err = p.db.QueryRow(
+		context.Background(),
 		SelectPersonByIDQuery,
 		id,
 	).Scan(
 		&person.ID,
 		&person.Nickname,
 		&person.Name,
-		&person.Birthdate,
+		&birthdate,
 		&strStack,
 	)
 	person.Stack = strings.Split(strStack, ",")
+	person.Birthdate = birthdate.Format("2006-01-02")
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, people.ErrPersonNotFound
 		}
+
+		log.Errorf("Error querying person: %v", err)
 
 		return nil, err
 	}
@@ -77,33 +79,47 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	t := top("db-search")
-	defer t()
-	result := p.mem2.Search(term)
-	return result, nil
+	return p.searchTrigram(term)
+}
+
+func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	rows, err := p.db.Query(
+		context.Background(),
+		SearchPeopleTrgmQuery,
+		strings.ToLower(term),
+	)
+	if err != nil {
+		log.Errorf("Error executing trigram search: %v", err)
+		return nil, err
+	}
+
+	return mapSearchResult(rows)
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
-	t := top("db-count")
-	defer t()
 	var total int64
 
-	err := p.db.QueryRow(
-		CountPeopleQuery,
-	).Scan(&total)
+	err := p.db.
+		QueryRow(
+			context.Background(),
+			CountPeopleQuery,
+		).
+		Scan(&total)
+
 	if err != nil {
+		log.Errorf("Error counting people: %v", err)
 		return 0, err
 	}
 
 	return total, nil
 }
 
-func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
+func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0)
 	for rows.Next() {
 		var person people.Person
 		var strStack string
-		var birthdate string
+		var birthdate time.Time
 
 		err := rows.Scan(
 			&person.ID,
@@ -113,11 +129,12 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 			&strStack,
 		)
 		if err != nil {
+			log.Errorf("Error scanning row: %v", err)
 			return nil, err
 		}
 
 		person.Stack = strings.Split(strStack, ",")
-		person.Birthdate = birthdate[0:10]
+		person.Birthdate = birthdate.Format("2006-01-02")
 
 		result = append(result, person)
 	}
@@ -125,11 +142,10 @@ func mapSearchResult(rows *sql.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *sql.DB, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person) people.Repository {
+func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, jobQueue JobQueue) people.Repository {
 	return &PersonRepository{
-		db:         db,
-		cache:      cache,
-		insertChan: insertChan,
-		mem2:       mem2,
+		db:       db,
+		cache:    cache,
+		jobQueue: jobQueue,
 	}
 }

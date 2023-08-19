@@ -6,31 +6,33 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 )
 
 var ctx = context.Background()
 
 type PeopleDbCache struct {
-	peopleCache   *redis.Client
-	nicknameCache *redis.Client
+	client rueidis.Client
 }
 
-func (p *PeopleDbCache) Cache() *redis.Client {
-	return p.peopleCache
+func (p *PeopleDbCache) Cache() rueidis.Client {
+	return p.client
 }
 
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
-	t := top("cache-get-nickname")
-	defer t()
+	getCmd := p.client.
+		B().
+		Get().
+		Key("person:" + key).
+		Cache()
 
-	item, err := p.peopleCache.Get(ctx, key).Result()
+	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
 	if err != nil {
 		return nil, err
 	}
 
 	var person people.Person
-	err = sonic.Unmarshal([]byte(item), &person)
+	err = sonic.Unmarshal(personBytes, &person)
 	if err != nil {
 		return nil, err
 	}
@@ -39,56 +41,45 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 }
 
 func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
-	t := top("cache-get-nickname")
-	defer t()
+	getNicknameCmd := p.client.
+		B().
+		Getbit().
+		Key("nickname:" + nickname).
+		Offset(0).
+		Cache()
 
-	_, err := p.nicknameCache.Get(ctx, nickname).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return false, nil
-		}
-
-		return false, err
-	}
-
-	return true, nil
+	return p.client.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
 }
 
 func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
-	t := top("cache-set")
-	defer t()
+	item, err := sonic.MarshalString(person)
+	if err != nil {
+		return nil, err
+	}
 
-	errChan := make(chan error, 2)
-	defer close(errChan)
+	setPersonCmd := p.client.
+		B().
+		Set().
+		Key("person:" + person.ID).
+		Value(item).
+		Ex(time.Hour).
+		Build()
 
-	go func() {
-		item, err := sonic.Marshal(person)
-		if err != nil {
-			errChan <- err
-			return
-		}
+	setNicknameCmd := p.client.
+		B().
+		Setbit().
+		Key("nickname:" + person.Nickname).
+		Offset(0).
+		Value(1).
+		Build()
 
-		_, err = p.peopleCache.Set(ctx, key, item, time.Hour).Result()
-		if err != nil {
-			errChan <- err
-			return
-		}
+	cmds := make(rueidis.Commands, 0, 2)
+	cmds = append(cmds, setPersonCmd)
+	cmds = append(cmds, setNicknameCmd)
 
-		errChan <- nil
-	}()
+	for _, res := range p.client.DoMulti(ctx, cmds...) {
+		err := res.Error()
 
-	go func() {
-		err := p.SetNickname(person.Nickname)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		errChan <- nil
-	}()
-
-	for i := 0; i < 2; i++ {
-		err := <-errChan
 		if err != nil {
 			return nil, err
 		}
@@ -97,29 +88,16 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	return person, nil
 }
 
-func (p *PeopleDbCache) SetNickname(nickname string) error {
-	t := top("cache-set-nickname")
-	defer t()
-
-	_, err := p.nicknameCache.Set(ctx, nickname, true, time.Hour).Result()
-
-	return err
-}
-
 func NewPeopleDbCache() *PeopleDbCache {
-	peopleCache := redis.NewClient(&redis.Options{
-		Addr:     "cache:6379",
-		Password: "",
-		DB:       0,
-	})
-	nicknameCache := redis.NewClient(&redis.Options{
-		Addr:     "cache:6379",
-		Password: "",
-		DB:       1,
-	})
+	opts := rueidis.ClientOption{
+		InitAddress: []string{"cache:6379"},
+	}
+	client, err := rueidis.NewClient(opts)
+	if err != nil {
+		panic(err)
+	}
 
 	return &PeopleDbCache{
-		peopleCache:   peopleCache,
-		nicknameCache: nicknameCache,
+		client: client,
 	}
 }
