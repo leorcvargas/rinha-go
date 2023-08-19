@@ -13,41 +13,12 @@ import (
 )
 
 type PersonRepository struct {
-	db         *pgxpool.Pool
-	cache      *PeopleDbCache
-	insertChan chan people.Person
-	mem2       *Mem2
-	jobQueue   JobQueue
+	db       *pgxpool.Pool
+	cache    *PeopleDbCache
+	jobQueue JobQueue
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	// _, err := p.db.Exec(
-	// 	context.Background(),
-	// 	InsertPersonQuery,
-	// 	person.ID,
-	// 	person.Nickname,
-	// 	person.Name,
-	// 	person.Birthdate,
-	// 	person.StackString(),
-	// 	strings.ToLower(person.Nickname+" "+person.Name+" "+person.StackString()),
-	// )
-
-	// if err != nil {
-	// 	var pgErr *pgconn.PgError
-	// 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-	// 		return nil, people.ErrNicknameTaken
-	// 	}
-
-	// 	return nil, err
-	// }
-
-	// _, err = p.cache.Set(person.ID, person)
-	// if err != nil {
-	// 	log.Errorf("Error inserting person in cache: %v", err)
-	// }
-
-	// return person, nil
-
 	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
 	if err != nil {
 		return nil, err
@@ -60,8 +31,6 @@ func (p *PersonRepository) Create(person *people.Person) (*people.Person, error)
 	p.jobQueue <- Job{Payload: person}
 
 	p.cache.Set(person.ID, person)
-
-	// p.insertChan <- *person
 
 	return person, nil
 }
@@ -108,11 +77,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 
 	return &person, nil
 }
-
-// func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-// 	result := p.mem2.Search(term)
-// 	return result, nil
-// }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	return p.searchTrigram(term)
@@ -178,12 +142,10 @@ func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, mem2 *Mem2, insertChan chan people.Person, jobQueue JobQueue) people.Repository {
+func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, jobQueue JobQueue) people.Repository {
 	return &PersonRepository{
-		db:         db,
-		cache:      cache,
-		insertChan: insertChan,
-		mem2:       mem2,
-		jobQueue:   jobQueue,
+		db:       db,
+		cache:    cache,
+		jobQueue: jobQueue,
 	}
 }
