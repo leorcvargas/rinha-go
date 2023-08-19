@@ -86,7 +86,7 @@ services:
     image: nginx
     hostname: api
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./scripts/nginx/:/etc/nginx/
     depends_on:
       - api1
       - api2
@@ -99,7 +99,6 @@ services:
           memory: "0.5GB"
 
   cache:
-    # image: redis:7
     image: eqalpha/keydb:latest
     hostname: cache
     ports:
@@ -109,17 +108,9 @@ services:
         limits:
           cpus: "0.3"
           memory: "0.5GB"
-    # command: ["redis-server", "--save", '""', "--appendonly", "no"]
-    command:
-      [
-        "keydb-server",
-        "--save",
-        '""',
-        "--appendonly",
-        "no",
-        "--server-threads",
-        "2",
-      ]
+    volumes:
+      - ./scripts/keydb/:/etc/keydb/
+    command: ["keydb-server", "/etc/keydb/keydb.conf"]
 
 volumes:
   postgres-db:
