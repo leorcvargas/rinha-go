@@ -79,10 +79,22 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+	sanitizedTerm := strings.ToLower(term)
+
+	result, err := p.cache.GetSearch(term)
+	if err != nil && !rueidis.IsRedisNil(err) {
+		log.Errorf("Error getting search from cache: %v", err)
+		return nil, err
+	}
+
+	if len(result) > 0 {
+		return result, nil
+	}
+
 	rows, err := p.db.Query(
 		context.Background(),
 		SearchPeopleTrgmQuery,
-		term,
+		sanitizedTerm,
 	)
 	if err != nil {
 		log.Errorf("Error executing trigram search: %v", err)
