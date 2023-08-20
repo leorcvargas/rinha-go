@@ -2,56 +2,77 @@ package peopledb
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
-	"github.com/redis/rueidis"
 )
 
 type PersonRepository struct {
-	db       *pgxpool.Pool
-	cache    *PeopleDbCache
+	db *pgxpool.Pool
+	// cache    *PeopleDbCache
 	jobQueue JobQueue
 }
 
 func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	_, err := p.db.Exec(
+		context.Background(),
+		InsertPersonQuery,
+		person.ID,
+		person.Nickname,
+		person.Name,
+		person.Birthdate,
+		person.StackStr(),
+		person.SearchStr(),
+	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, people.ErrNicknameTaken
+		}
+
+		log.Errorf("Error inserting person: %v", err)
 		return nil, err
 	}
 
-	if nicknameTaken {
-		return nil, people.ErrNicknameTaken
-	}
+	// nicknameTaken, err := p.cache.GetNickname(person.Nickname)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	p.jobQueue <- Job{Payload: person}
+	// if nicknameTaken {
+	// 	return nil, people.ErrNicknameTaken
+	// }
 
-	p.cache.Set(person.ID, person)
+	// p.jobQueue <- Job{Payload: person}
+
+	// p.cache.Set(person.ID, person)
 
 	return person, nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
-	cachedPerson, err := p.cache.Get(id)
+	// cachedPerson, err := p.cache.Get(id)
 
-	if err != nil && !rueidis.IsRedisNil(err) {
-		log.Errorf("Error getting person from cache: %v", err)
-		return nil, err
-	}
+	// if err != nil && !rueidis.IsRedisNil(err) {
+	// 	log.Errorf("Error getting person from cache: %v", err)
+	// 	return nil, err
+	// }
 
-	if cachedPerson != nil {
-		return cachedPerson, nil
-	}
+	// if cachedPerson != nil {
+	// 	return cachedPerson, nil
+	// }
 
 	var person people.Person
 	var strStack string
 	var birthdate time.Time
 
-	err = p.db.QueryRow(
+	err := p.db.QueryRow(
 		context.Background(),
 		SelectPersonByIDQuery,
 		id,
@@ -142,10 +163,14 @@ func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, jobQueue JobQueue) people.Repository {
+func NewPersonRepository(
+	db *pgxpool.Pool,
+	//  cache *PeopleDbCache,
+	jobQueue JobQueue,
+) people.Repository {
 	return &PersonRepository{
-		db:       db,
-		cache:    cache,
+		db: db,
+		// cache:    cache,
 		jobQueue: jobQueue,
 	}
 }
