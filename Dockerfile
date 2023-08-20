@@ -19,5 +19,6 @@ EXPOSE 8080
 COPY --from=builder /app/bin/rinha .
 
 ENV GOGC 1000
+ENV GOMAXPROCS 2
 
 CMD ["/rinha"]
