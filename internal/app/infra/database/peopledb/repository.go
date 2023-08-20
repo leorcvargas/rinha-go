@@ -81,14 +81,14 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	sanitizedTerm := strings.ToLower(term)
 
-	result, err := p.cache.GetSearch(term)
+	cacheResult, err := p.cache.GetSearch(sanitizedTerm)
 	if err != nil && !rueidis.IsRedisNil(err) {
 		log.Errorf("Error getting search from cache: %v", err)
 		return nil, err
 	}
 
-	if len(result) > 0 {
-		return result, nil
+	if len(cacheResult) > 0 {
+		return cacheResult, nil
 	}
 
 	rows, err := p.db.Query(
@@ -101,7 +101,20 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return nil, err
 	}
 
-	return mapSearchResult(rows)
+	dbResult, err := p.mapSearchResult(rows)
+	if err != nil {
+		log.Errorf("Error mapping search result: %v", err)
+		return nil, err
+	}
+
+	go func(payload []people.Person) {
+		err := p.cache.SetSearch(sanitizedTerm, payload)
+		if err != nil {
+			log.Errorf("Error setting search on cache: %v", err)
+		}
+	}(dbResult)
+
+	return dbResult, nil
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
@@ -122,7 +135,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	return total, nil
 }
 
-func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
+func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0, 50)
 	for rows.Next() {
 		var person people.Person
