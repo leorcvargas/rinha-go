@@ -18,21 +18,12 @@ type PersonRepository struct {
 	jobQueue JobQueue
 }
 
-func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
-	if err != nil {
-		return nil, err
-	}
-
-	if nicknameTaken {
-		return nil, people.ErrNicknameTaken
-	}
-
+func (p *PersonRepository) Create(person *people.Person) error {
 	p.cache.Set(person.ID, person)
 
 	p.jobQueue <- Job{Payload: person}
 
-	return person, nil
+	return nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
@@ -79,10 +70,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	return p.searchTrigram(term)
-}
-
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
 	rows, err := p.db.Query(
 		context.Background(),
 		SearchPeopleTrgmQuery,
@@ -93,7 +80,7 @@ func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
 		return nil, err
 	}
 
-	return mapSearchResult(rows)
+	return p.mapSearchResult(rows)
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
@@ -114,7 +101,20 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	return total, nil
 }
 
-func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
+func (p *PersonRepository) CheckNicknameExists(nickname string) (bool, error) {
+	nicknameTaken, err := p.cache.GetNickname(nickname)
+	if err != nil {
+		return false, err
+	}
+
+	if nicknameTaken {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0)
 	for rows.Next() {
 		var person people.Person

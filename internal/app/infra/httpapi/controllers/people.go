@@ -68,16 +68,16 @@ func (p *PeopleController) Search(c *fiber.Ctx) error {
 	t := c.Query("t")
 
 	if t == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "missing query param 't'",
-		})
+		return c.
+			Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "missing query param 't'"})
 	}
 
 	people, err := p.findPeople.Search(t)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		return c.
+			Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	response := make([]PersonResponse, 0, len(people))
@@ -95,34 +95,34 @@ func (p *PeopleController) Get(c *fiber.Ctx) error {
 	person, err := p.findPeople.ByID(id)
 	if err != nil {
 		if errors.Is(err, people.ErrPersonNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": err.Error(),
-			})
+			return c.
+				Status(fiber.StatusNotFound).
+				JSON(fiber.Map{"error": err.Error()})
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		return c.
+			Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": "internal server error"})
 	}
 
-	response := mapPersonResponse(person)
-
-	return c.Status(fiber.StatusOK).JSON(response)
+	return c.
+		Status(fiber.StatusOK).
+		JSON(mapPersonResponse(person))
 }
 
 func (p *PeopleController) Create(c *fiber.Ctx) error {
 	var dto CreatePersonRequest
 
 	if err := c.BodyParser(&dto); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "bad request",
-		})
+		return c.
+			Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "bad request"})
 	}
 
 	if err := dto.Validate(); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.
+			Status(fiber.StatusUnprocessableEntity).
+			JSON(fiber.Map{"error": err.Error()})
 	}
 
 	person, err := p.createPerson.Execute(
@@ -133,21 +133,21 @@ func (p *PeopleController) Create(c *fiber.Ctx) error {
 	)
 	if err != nil {
 		if errors.Is(err, people.ErrNicknameTaken) {
-			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
-				"error": err.Error(),
-			})
+			return c.
+				Status(fiber.StatusUnprocessableEntity).
+				JSON(fiber.Map{"error": err.Error()})
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		return c.
+			Status(fiber.StatusInternalServerError).
+			JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	c.Set("Location", "/pessoas/"+person.ID)
 
-	response := mapPersonResponse(person)
-
-	return c.Status(fiber.StatusCreated).JSON(response)
+	return c.
+		Status(fiber.StatusCreated).
+		JSON(mapPersonResponse(person))
 }
 
 func (p *PeopleController) CountAll(c *fiber.Ctx) error {
