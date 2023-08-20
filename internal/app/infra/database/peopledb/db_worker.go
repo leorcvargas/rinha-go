@@ -52,9 +52,6 @@ func (w Worker) Start() {
 
 			select {
 			case job := <-w.JobChannel:
-				stack := job.Payload.StackStr()
-				search := job.Payload.SearchStr()
-
 				w.db.Exec(
 					context.Background(),
 					InsertPersonQuery,
@@ -62,8 +59,8 @@ func (w Worker) Start() {
 					job.Payload.Nickname,
 					job.Payload.Name,
 					job.Payload.Birthdate,
-					stack,
-					search,
+					job.Payload.StackStr(),
+					job.Payload.SearchStr(),
 				)
 
 			case <-w.quit:
