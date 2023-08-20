@@ -78,7 +78,18 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
+var terms map[string]int
+
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
+	if terms == nil {
+		terms = make(map[string]int)
+	}
+
+	terms[term]++
+	if terms[term] >= 2 {
+		log.Infof("Term %s search count: %d", term, terms[term])
+	}
+
 	return p.searchTrigram(term)
 }
 
