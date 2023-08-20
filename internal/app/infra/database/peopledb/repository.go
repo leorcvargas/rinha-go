@@ -81,14 +81,15 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	sanitizedTerm := strings.ToLower(term)
 
-	cacheResult, err := p.cache.GetSearch(sanitizedTerm)
+	cachedResult, err := p.cache.GetSearch(sanitizedTerm)
 	if err != nil && !rueidis.IsRedisNil(err) {
 		log.Errorf("Error getting search from cache: %v", err)
 		return nil, err
 	}
 
-	if len(cacheResult) > 0 {
-		return cacheResult, nil
+	if len(cachedResult) > 0 {
+		log.Infof("Returning cached search result for term: %s", sanitizedTerm)
+		return cachedResult, nil
 	}
 
 	rows, err := p.db.Query(
