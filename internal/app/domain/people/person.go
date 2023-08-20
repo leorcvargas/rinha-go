@@ -14,8 +14,12 @@ type Person struct {
 	Stack     []string
 }
 
-func (p *Person) StackString() string {
+func (p *Person) StackStr() string {
 	return strings.Join(p.Stack, ",")
+}
+
+func (p *Person) SearchStr() string {
+	return p.Nickname + " " + p.Name + " " + p.StackStr()
 }
 
 func BuildPerson(

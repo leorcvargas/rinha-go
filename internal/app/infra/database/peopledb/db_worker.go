@@ -2,7 +2,6 @@ package peopledb
 
 import (
 	"context"
-	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -53,6 +52,9 @@ func (w Worker) Start() {
 
 			select {
 			case job := <-w.JobChannel:
+				stack := job.Payload.StackStr()
+				search := job.Payload.SearchStr()
+
 				w.db.Exec(
 					context.Background(),
 					InsertPersonQuery,
@@ -60,8 +62,8 @@ func (w Worker) Start() {
 					job.Payload.Nickname,
 					job.Payload.Name,
 					job.Payload.Birthdate,
-					job.Payload.StackString(),
-					strings.ToLower(job.Payload.Nickname+" "+job.Payload.Name+" "+job.Payload.StackString()),
+					stack,
+					search,
 				)
 
 			case <-w.quit:

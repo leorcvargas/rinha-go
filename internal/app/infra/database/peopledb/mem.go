@@ -19,7 +19,7 @@ type Mem struct {
 }
 
 func (m *Mem) Add(person people.Person) {
-	key := person.Nickname + " " + person.Name + " " + person.StackString()
+	key := person.Nickname + " " + person.Name + " " + person.StackStr()
 	key = strings.ToLower(key)
 	item := PersonItem{
 		Key:    key,
