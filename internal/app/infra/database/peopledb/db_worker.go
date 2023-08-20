@@ -69,7 +69,7 @@ func (w Worker) Start() {
 
 	go func() {
 		batch := make([]Job, 0, 10000)
-		tick := time.Tick(3 * time.Second)
+		tick := time.Tick(5 * time.Second)
 
 		for {
 			select {

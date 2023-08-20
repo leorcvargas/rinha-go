@@ -19,7 +19,10 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) error {
-	p.cache.Set(person.ID, person)
+	if _, err := p.cache.Set(person.ID, person); err != nil {
+		log.Errorf("Error setting person in cache: %v", err)
+		return err
+	}
 
 	p.jobQueue <- Job{Payload: person}
 
