@@ -49,6 +49,7 @@ func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 // case we need to stop it
 func (w Worker) Start() {
 	dataCh := make(chan Job)
+	insertCh := make(chan []Job)
 
 	go func() {
 		for {
@@ -74,28 +75,37 @@ func (w Worker) Start() {
 			select {
 			case data := <-dataCh:
 				batch = append(batch, data)
+
 			case <-tick:
 				if len(batch) > 0 {
-					_, err := w.db.CopyFrom(
-						context.Background(),
-						pgx.Identifier{"people"},
-						[]string{"id", "nickname", "name", "birthdate", "stack", "search"},
-						pgx.CopyFromSlice(len(batch), func(i int) ([]interface{}, error) {
-							return []interface{}{
-								batch[i].Payload.ID,
-								batch[i].Payload.Nickname,
-								batch[i].Payload.Name,
-								batch[i].Payload.Birthdate,
-								batch[i].Payload.StackStr(),
-								batch[i].Payload.SearchStr(),
-							}, nil
-						}))
-
-					if err != nil {
-						log.Errorf("Error on insert batch: %v", err)
-					}
-
+					insertCh <- batch
 					batch = make([]Job, 0, 10000)
+				}
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case batch := <-insertCh:
+				_, err := w.db.CopyFrom(
+					context.Background(),
+					pgx.Identifier{"people"},
+					[]string{"id", "nickname", "name", "birthdate", "stack", "search"},
+					pgx.CopyFromSlice(len(batch), func(i int) ([]interface{}, error) {
+						return []interface{}{
+							batch[i].Payload.ID,
+							batch[i].Payload.Nickname,
+							batch[i].Payload.Name,
+							batch[i].Payload.Birthdate,
+							batch[i].Payload.StackStr(),
+							batch[i].Payload.SearchStr(),
+						}, nil
+					}))
+
+				if err != nil {
+					log.Errorf("Error on insert batch: %v", err)
 				}
 			}
 		}
