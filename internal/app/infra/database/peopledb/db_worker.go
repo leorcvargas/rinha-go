@@ -2,7 +2,10 @@ package peopledb
 
 import (
 	"context"
+	"time"
 
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
@@ -45,6 +48,8 @@ func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 // Start method starts the run loop for the worker, listening for a quit channel in
 // case we need to stop it
 func (w Worker) Start() {
+	dataCh := make(chan Job)
+
 	go func() {
 		for {
 			// register the current worker into the worker queue.
@@ -52,20 +57,48 @@ func (w Worker) Start() {
 
 			select {
 			case job := <-w.JobChannel:
-				w.db.Exec(
-					context.Background(),
-					InsertPersonQuery,
-					job.Payload.ID,
-					job.Payload.Nickname,
-					job.Payload.Name,
-					job.Payload.Birthdate,
-					job.Payload.StackStr(),
-					job.Payload.SearchStr(),
-				)
+				log.Infof("Worker %d: Received job %v", w.WorkerPool, job)
+				dataCh <- job
 
 			case <-w.quit:
 				// we have received a signal to stop
 				return
+			}
+		}
+	}()
+
+	go func() {
+		batch := make([]Job, 0, 10000)
+		tick := time.Tick(3 * time.Second)
+
+		for {
+			select {
+			case data := <-dataCh:
+				batch = append(batch, data)
+			case <-tick:
+				log.Info("Inserting batch")
+				if len(batch) > 0 {
+					_, err := w.db.CopyFrom(
+						context.Background(),
+						pgx.Identifier{"people"},
+						[]string{"id", "nickname", "name", "birthdate", "stack", "search"},
+						pgx.CopyFromSlice(len(batch), func(i int) ([]interface{}, error) {
+							return []interface{}{
+								batch[i].Payload.ID,
+								batch[i].Payload.Nickname,
+								batch[i].Payload.Name,
+								batch[i].Payload.Birthdate,
+								batch[i].Payload.StackStr(),
+								batch[i].Payload.SearchStr(),
+							}, nil
+						}))
+
+					if err != nil {
+						log.Errorf("Error on insert batch: %v", err)
+					}
+
+					batch = make([]Job, 0, 10000)
+				}
 			}
 		}
 	}()
