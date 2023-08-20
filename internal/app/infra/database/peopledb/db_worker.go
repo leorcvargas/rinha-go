@@ -57,7 +57,6 @@ func (w Worker) Start() {
 
 			select {
 			case job := <-w.JobChannel:
-				log.Infof("Worker %d: Received job %v", w.WorkerPool, job)
 				dataCh <- job
 
 			case <-w.quit:
@@ -76,7 +75,6 @@ func (w Worker) Start() {
 			case data := <-dataCh:
 				batch = append(batch, data)
 			case <-tick:
-				log.Info("Inserting batch")
 				if len(batch) > 0 {
 					_, err := w.db.CopyFrom(
 						context.Background(),
