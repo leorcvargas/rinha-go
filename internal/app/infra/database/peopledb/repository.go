@@ -78,22 +78,7 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 	return &person, nil
 }
 
-var terms map[string]int
-
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	if terms == nil {
-		terms = make(map[string]int)
-	}
-
-	terms[term]++
-	if terms[term] >= 2 {
-		log.Infof("Term %s search count: %d", term, terms[term])
-	}
-
-	return p.searchTrigram(term)
-}
-
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
 	rows, err := p.db.Query(
 		context.Background(),
 		SearchPeopleTrgmQuery,
@@ -126,7 +111,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 }
 
 func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
-	result := make([]people.Person, 0)
+	result := make([]people.Person, 0, 50)
 	for rows.Next() {
 		var person people.Person
 		var strStack string
