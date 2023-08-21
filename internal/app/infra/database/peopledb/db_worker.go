@@ -81,17 +81,17 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 	batch := arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
 	batchCurrentIndex := 0
 
-	min := 5000
-	max := 25000
-
-	randomTickTime := func() time.Duration {
+	randomTime := func(min, max int) time.Duration {
 		randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
-
 		amount := randomizer.Intn(max-min) + min
 
 		return time.Duration(amount) * time.Millisecond
 	}
-	tickInsert := time.Tick(randomTickTime())
+
+	tickInsertRateOffset := randomTime(1000, 3000)
+	tickInsertRate := randomTime(5000, 25000) + tickInsertRateOffset
+	tickInsert := time.Tick(tickInsertRate)
+
 	tickArenaClear := time.Tick(2 * time.Minute)
 
 	for {
@@ -111,7 +111,6 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 				batch = arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
 				batchCurrentIndex = 0
 			}
-			tickInsert = time.Tick(randomTickTime())
 
 		case <-tickArenaClear:
 			if batchCurrentIndex > 0 {
@@ -120,8 +119,6 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 					batchLen: batchCurrentIndex,
 				}
 			}
-
-			tickInsert = time.Tick(randomTickTime())
 
 			arn.Free()
 			arn = arena.NewArena()
