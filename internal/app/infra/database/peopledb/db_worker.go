@@ -68,19 +68,25 @@ func (w Worker) Start() {
 	}()
 
 	go func() {
-		batch := make([]Job, 0, 10000)
+		batchMaxSize := 500
+		batch := make([]Job, 0, batchMaxSize)
 		tick := time.Tick(10 * time.Second)
 
 		for {
 			select {
 			case data := <-dataCh:
 				batch = append(batch, data)
+				if len(batch) >= batchMaxSize {
+					log.Info("Batch max size reached, inserting")
+					insertCh <- batch
+					batch = make([]Job, 0, batchMaxSize)
+				}
 
 			case <-tick:
 				log.Infof("Insert tick, current batch length is %d", len(batch))
 				if len(batch) > 0 {
 					insertCh <- batch
-					batch = make([]Job, 0, 10000)
+					batch = make([]Job, 0, batchMaxSize)
 				}
 			}
 		}
