@@ -19,7 +19,7 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) error {
-	if _, err := p.cache.Set(person.ID, person); err != nil {
+	if err := p.cache.Set(person.ID, person); err != nil {
 		log.Errorf("Error setting person in cache: %v", err)
 		return err
 	}

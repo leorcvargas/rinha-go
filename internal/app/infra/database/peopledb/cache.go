@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -53,10 +54,10 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	return p.client.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
 }
 
-func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
+func (p *PeopleDbCache) Set(key string, person *people.Person) error {
 	item, err := sonic.MarshalString(person)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	setPersonCmd := p.client.
@@ -75,19 +76,38 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 		Value(1).
 		Build()
 
-	cmds := make(rueidis.Commands, 0, 2)
-	cmds = append(cmds, setPersonCmd)
-	cmds = append(cmds, setNicknameCmd)
+	var wg sync.WaitGroup
 
-	for _, res := range p.client.DoMulti(ctx, cmds...) {
-		err := res.Error()
+	errorCh := make(chan error, 2)
+	defer close(errorCh)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		res := p.client.Do(ctx, setPersonCmd)
+		errorCh <- res.Error()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		res := p.client.Do(ctx, setNicknameCmd)
+		errorCh <- res.Error()
+	}()
+
+	wg.Wait()
+
+	for i := 0; i < 2; i++ {
+		err := <-errorCh
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return person, nil
+	return nil
 }
 
 func (p *PeopleDbCache) SetSearch(term string, result []people.Person) error {
