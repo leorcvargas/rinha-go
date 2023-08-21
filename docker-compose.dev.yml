@@ -103,7 +103,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.25"
           memory: "0.5GB"
 
   cache:
@@ -114,7 +114,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.15"
           memory: "0.5GB"
     volumes:
       - ./scripts/keydb/:/etc/keydb/
