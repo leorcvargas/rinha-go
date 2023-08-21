@@ -111,6 +111,7 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		log.Errorf("Error executing trigram search: %v", err)
 		return nil, err
 	}
+	defer rows.Close()
 
 	result, err := p.mapSearchResult(rows)
 	if err != nil {
