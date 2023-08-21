@@ -32,6 +32,11 @@ services:
       - "6379:6379"
     volumes:
       - ./scripts/keydb/:/etc/keydb/
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: "0.5GB"
     command: ["keydb-server", "/etc/keydb/keydb.conf"]
 
 volumes:

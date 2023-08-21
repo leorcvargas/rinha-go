@@ -64,7 +64,7 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) error {
 		Set().
 		Key("person:" + person.ID).
 		Value(item).
-		Ex(time.Hour).
+		Ex(15 * time.Second).
 		Build()
 
 	setNicknameCmd := p.client.
@@ -101,7 +101,7 @@ func (p *PeopleDbCache) SetSearch(term string, result []people.Person) error {
 		Set().
 		Key("search:" + term).
 		Value(item).
-		Ex(45 * time.Second).
+		Ex(15 * time.Second).
 		Build()
 
 	return p.client.Do(ctx, setSearchCmd).Error()
@@ -118,7 +118,7 @@ func (p *PeopleDbCache) GetSearch(term string) ([]people.Person, error) {
 		DoCache(
 			ctx,
 			getSearchCmd,
-			45*time.Second,
+			15*time.Second,
 		).
 		AsBytes()
 
