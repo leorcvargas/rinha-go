@@ -88,6 +88,51 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 	return person, nil
 }
 
+func (p *PeopleDbCache) SetSearch(term string, result []people.Person) error {
+	item, err := sonic.MarshalString(result)
+	if err != nil {
+		return err
+	}
+
+	setSearchCmd := p.client.
+		B().
+		Set().
+		Key("search:" + term).
+		Value(item).
+		Ex(30 * time.Second).
+		Build()
+
+	return p.client.Do(ctx, setSearchCmd).Error()
+}
+
+func (p *PeopleDbCache) GetSearch(term string) ([]people.Person, error) {
+	getSearchCmd := p.client.
+		B().
+		Get().
+		Key("search:" + term).
+		Cache()
+
+	resultBytes, err := p.client.
+		DoCache(
+			ctx,
+			getSearchCmd,
+			30*time.Second,
+		).
+		AsBytes()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []people.Person
+	err = sonic.Unmarshal(resultBytes, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func NewPeopleDbCache() *PeopleDbCache {
 	opts := rueidis.ClientOption{
 		InitAddress: []string{"cache:6379"},

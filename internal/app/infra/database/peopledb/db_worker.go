@@ -77,6 +77,7 @@ func (w Worker) Start() {
 				batch = append(batch, data)
 
 			case <-tick:
+				log.Infof("Insert tick, current batch length is %d", len(batch))
 				if len(batch) > 0 {
 					insertCh <- batch
 					batch = make([]Job, 0, 10000)
