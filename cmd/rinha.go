@@ -13,6 +13,8 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/httpapi/routers"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
+
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
