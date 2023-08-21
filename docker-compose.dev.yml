@@ -104,7 +104,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.1"
+          cpus: "0.15"
           memory: "0.5GB"
 
   pgbouncer:
@@ -129,7 +129,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.3"
+          cpus: "0.25"
           memory: "0.5GB"
 
 volumes:
