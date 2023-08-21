@@ -2,6 +2,7 @@ package peopledb
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -70,7 +71,13 @@ func (w Worker) Start() {
 	go func() {
 		batchMaxSize := 5000
 		batch := make([]Job, 0, batchMaxSize)
-		tick := time.Tick(10 * time.Second)
+
+		min := 5
+		max := 10
+
+		randomTickTime := time.Duration(rand.Intn(max-min) + min)
+
+		tick := time.Tick(randomTickTime * time.Second)
 
 		for {
 			select {
@@ -82,6 +89,7 @@ func (w Worker) Start() {
 				if len(batch) > 0 {
 					insertCh <- batch
 					batch = make([]Job, 0, batchMaxSize)
+					tick = time.Tick(randomTickTime * time.Second)
 				}
 			}
 		}
