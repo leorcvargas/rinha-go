@@ -9,8 +9,12 @@ const (
 	WHERE p.fts_q @@ plainto_tsquery('people_terms', $1)
 	LIMIT 50;`
 
+	// SearchPeopleTrgmQuery = `SELECT id, nickname, name, birthdate, stack FROM people p
+	// WHERE p.search LIKE '%' || $1 || '%'
+	// LIMIT 50;`
+
 	SearchPeopleTrgmQuery = `SELECT id, nickname, name, birthdate, stack FROM people p
-	WHERE p.search LIKE '%' || $1 || '%'
+	WHERE p.search % $1
 	LIMIT 50;`
 
 	CountPeopleQuery = "SELECT COUNT(*) FROM people;"

@@ -1,5 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
+SET pg_trgm.similarity_threshold = 0.08;
+
 CREATE TABLE
     IF NOT EXISTS public.people (
         id uuid PRIMARY KEY NOT NULL,
@@ -11,4 +13,6 @@ CREATE TABLE
     );
 
 CREATE INDEX
-    CONCURRENTLY IF NOT EXISTS idx_people_trigram ON public.people USING gist (search gist_trgm_ops(siglen=64));
+    CONCURRENTLY IF NOT EXISTS idx_people_trigram ON public.people USING gist (
+        search gist_trgm_ops(siglen = 64)
+    );
