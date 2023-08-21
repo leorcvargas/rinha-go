@@ -37,6 +37,90 @@ type Worker struct {
 	db         *pgxpool.Pool
 }
 
+func (w Worker) Start() {
+	dataCh := make(chan Job)
+	insertCh := make(chan []Job)
+
+	go w.bootstrap(dataCh)
+
+	go w.processData(dataCh, insertCh)
+
+	go w.processInsert(insertCh)
+}
+
+func (w Worker) Stop() {
+	go func() {
+		w.quit <- true
+	}()
+}
+
+func (w Worker) bootstrap(dataCh chan Job) {
+	for {
+		w.WorkerPool <- w.JobChannel
+
+		select {
+		case job := <-w.JobChannel:
+			dataCh <- job
+
+		case <-w.quit:
+			return
+		}
+	}
+}
+
+func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
+	batchMaxSize := 5000
+	batch := make([]Job, 0, batchMaxSize)
+
+	min := 5
+	max := 15
+
+	randomTickTime := time.Duration(rand.Intn(max-min) + min)
+
+	tick := time.Tick(randomTickTime * time.Second)
+
+	for {
+		select {
+		case data := <-dataCh:
+			batch = append(batch, data)
+
+		case <-tick:
+			log.Infof("Insert tick, current batch length is %d", len(batch))
+			if len(batch) > 0 {
+				insertCh <- batch
+				batch = make([]Job, 0, batchMaxSize)
+				tick = time.Tick(randomTickTime * time.Second)
+			}
+		}
+	}
+}
+
+func (w Worker) processInsert(insertCh chan []Job) {
+	for {
+		select {
+		case batch := <-insertCh:
+			_, err := w.db.CopyFrom(
+				context.Background(),
+				pgx.Identifier{"people"},
+				[]string{"id", "nickname", "name", "birthdate", "stack", "search"},
+				pgx.CopyFromSlice(len(batch), func(i int) ([]interface{}, error) {
+					return []interface{}{
+						batch[i].Payload.ID,
+						batch[i].Payload.Nickname,
+						batch[i].Payload.Name,
+						batch[i].Payload.Birthdate,
+						batch[i].Payload.StackStr(),
+						batch[i].Payload.SearchStr(),
+					}, nil
+				}))
+
+			if err != nil {
+				log.Errorf("Error on insert batch: %v", err)
+			}
+		}
+	}
+}
+
 func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 	return Worker{
 		WorkerPool: workerPool,
@@ -44,89 +128,6 @@ func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 		quit:       make(chan bool),
 		db:         db,
 	}
-}
-
-// Start method starts the run loop for the worker, listening for a quit channel in
-// case we need to stop it
-func (w Worker) Start() {
-	dataCh := make(chan Job)
-	insertCh := make(chan []Job)
-
-	go func() {
-		for {
-			// register the current worker into the worker queue.
-			w.WorkerPool <- w.JobChannel
-
-			select {
-			case job := <-w.JobChannel:
-				dataCh <- job
-
-			case <-w.quit:
-				// we have received a signal to stop
-				return
-			}
-		}
-	}()
-
-	go func() {
-		batchMaxSize := 5000
-		batch := make([]Job, 0, batchMaxSize)
-
-		min := 5
-		max := 10
-
-		randomTickTime := time.Duration(rand.Intn(max-min) + min)
-
-		tick := time.Tick(randomTickTime * time.Second)
-
-		for {
-			select {
-			case data := <-dataCh:
-				batch = append(batch, data)
-
-			case <-tick:
-				log.Infof("Insert tick, current batch length is %d", len(batch))
-				if len(batch) > 0 {
-					insertCh <- batch
-					batch = make([]Job, 0, batchMaxSize)
-					tick = time.Tick(randomTickTime * time.Second)
-				}
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			case batch := <-insertCh:
-				_, err := w.db.CopyFrom(
-					context.Background(),
-					pgx.Identifier{"people"},
-					[]string{"id", "nickname", "name", "birthdate", "stack", "search"},
-					pgx.CopyFromSlice(len(batch), func(i int) ([]interface{}, error) {
-						return []interface{}{
-							batch[i].Payload.ID,
-							batch[i].Payload.Nickname,
-							batch[i].Payload.Name,
-							batch[i].Payload.Birthdate,
-							batch[i].Payload.StackStr(),
-							batch[i].Payload.SearchStr(),
-						}, nil
-					}))
-
-				if err != nil {
-					log.Errorf("Error on insert batch: %v", err)
-				}
-			}
-		}
-	}()
-}
-
-// Stop signals the worker to stop listening for work requests.
-func (w Worker) Stop() {
-	go func() {
-		w.quit <- true
-	}()
 }
 
 type Dispatcher struct {
