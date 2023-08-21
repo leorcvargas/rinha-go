@@ -110,11 +110,7 @@ func (p *PersonRepository) CheckNicknameExists(nickname string) (bool, error) {
 		return false, err
 	}
 
-	if nicknameTaken {
-		return true, nil
-	}
-
-	return false, nil
+	return nicknameTaken, nil
 }
 
 func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
