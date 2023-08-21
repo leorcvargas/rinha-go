@@ -75,16 +75,16 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	sanitizedTerm := strings.ToLower(term)
 
-	// cachedResult, err := p.cache.GetSearch(sanitizedTerm)
-	// if err != nil && !rueidis.IsRedisNil(err) {
-	// 	log.Errorf("Error getting search from cache: %v", err)
-	// 	return nil, err
-	// }
+	cachedResult, err := p.cache.GetSearch(sanitizedTerm)
+	if err != nil && !rueidis.IsRedisNil(err) {
+		log.Errorf("Error getting search from cache: %v", err)
+		return nil, err
+	}
 
-	// if len(cachedResult) > 0 {
-	// 	log.Infof("Returning cached search result for term: %s", sanitizedTerm)
-	// 	return cachedResult, nil
-	// }
+	if len(cachedResult) > 0 {
+		log.Infof("Returning cached search result for term: %s", sanitizedTerm)
+		return cachedResult, nil
+	}
 
 	rows, err := p.db.Query(
 		context.Background(),
@@ -102,13 +102,13 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return nil, err
 	}
 
-	// if len(result) > 0 {
-	// 	go func() {
-	// 		if err := p.cache.SetSearch(sanitizedTerm, result); err != nil {
-	// 			log.Errorf("Error setting search result in cache: %v", err)
-	// 		}
-	// 	}()
-	// }
+	if len(result) > 0 {
+		go func() {
+			if err := p.cache.SetSearch(sanitizedTerm, result); err != nil {
+				log.Errorf("Error setting search result in cache: %v", err)
+			}
+		}()
+	}
 
 	return result, nil
 }
