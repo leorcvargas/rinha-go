@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -76,31 +75,12 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) error {
 		Value(1).
 		Build()
 
-	var wg sync.WaitGroup
+	cmds := make(rueidis.Commands, 0, 2)
+	cmds = append(cmds, setPersonCmd)
+	cmds = append(cmds, setNicknameCmd)
 
-	errorCh := make(chan error, 2)
-	defer close(errorCh)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		res := p.client.Do(ctx, setPersonCmd)
-		errorCh <- res.Error()
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		res := p.client.Do(ctx, setNicknameCmd)
-		errorCh <- res.Error()
-	}()
-
-	wg.Wait()
-
-	for i := 0; i < 2; i++ {
-		err := <-errorCh
+	for _, res := range p.client.DoMulti(ctx, cmds...) {
+		err := res.Error()
 
 		if err != nil {
 			return err
