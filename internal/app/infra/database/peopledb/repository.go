@@ -2,11 +2,13 @@ package peopledb
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/rueidis"
@@ -19,12 +21,30 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) error {
-	if err := p.cache.Set(person.ID, person); err != nil {
-		log.Errorf("Error setting person in cache: %v", err)
+	_, err := p.db.Exec(
+		context.Background(),
+		InsertPersonQuery,
+		person.ID,
+		person.Nickname,
+		person.Name,
+		person.Birthdate,
+		person.StackStr(),
+		person.SearchStr(),
+	)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return people.ErrNicknameTaken
+		}
+
 		return err
 	}
 
-	p.jobQueue <- Job{Payload: person}
+	err = p.cache.Set(person.ID, person)
+	if err != nil {
+		log.Errorf("Error inserting person in cache: %v", err)
+	}
 
 	return nil
 }
@@ -131,12 +151,7 @@ func (p *PersonRepository) CountAll() (int64, error) {
 }
 
 func (p *PersonRepository) CheckNicknameExists(nickname string) (bool, error) {
-	nicknameTaken, err := p.cache.GetNickname(nickname)
-	if err != nil {
-		return false, err
-	}
-
-	return nicknameTaken, nil
+	return p.cache.GetNickname(nickname)
 }
 
 func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
