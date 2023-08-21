@@ -46,7 +46,7 @@ services:
       - CACHE_HOST=cache
       - CACHE_PORT=6379
       - SERVER_PORT=8080
-      - ENABLE_PROFILING=1
+      - ENABLE_PROFILING=0
     volumes:
       - ./prof:/app/prof
     depends_on:
@@ -76,7 +76,7 @@ services:
       - CACHE_HOST=cache
       - CACHE_PORT=6379
       - SERVER_PORT=8080
-      - ENABLE_PROFILING=1
+      - ENABLE_PROFILING=0
     volumes:
       - ./prof:/app/prof
     depends_on:
