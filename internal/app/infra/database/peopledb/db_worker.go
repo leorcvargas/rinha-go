@@ -89,10 +89,10 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 	}
 
 	tickInsertRateOffset := randomTime(1000, 3000)
-	tickInsertRate := randomTime(5000, 25000) + tickInsertRateOffset
+	tickInsertRate := randomTime(5000, 10000) + tickInsertRateOffset
 	tickInsert := time.Tick(tickInsertRate)
 
-	tickArenaClear := time.Tick(2 * time.Minute)
+	tickArenaClear := time.Tick(5 * time.Minute)
 
 	for {
 		select {
