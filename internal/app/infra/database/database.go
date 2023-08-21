@@ -18,7 +18,7 @@ var (
 func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 	once.Do(func() {
 		connStr := fmt.Sprintf(
-			"user=%s password=%s host=%s port=%s dbname=%s sslmode=disable default_query_exec_mode=cache_describe",
+			"user=%s password=%s host=%s port=%s dbname=%s sslmode=disable default_query_exec_mode=simple_protocol",
 			config.Database.User,
 			config.Database.Password,
 			config.Database.Host,
@@ -30,6 +30,7 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 		if err != nil {
 			log.Fatalln("Unable to parse connection url:", err)
 		}
+		poolConfig.MaxConns = 150
 
 		db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 		if err != nil {
