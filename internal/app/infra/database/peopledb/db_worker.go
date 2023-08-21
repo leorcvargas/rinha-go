@@ -1,6 +1,7 @@
 package peopledb
 
 import (
+	"arena"
 	"context"
 	"math/rand"
 	"time"
@@ -37,9 +38,14 @@ type Worker struct {
 	db         *pgxpool.Pool
 }
 
+type insertChannelPayload struct {
+	batch    []Job
+	batchLen int
+}
+
 func (w Worker) Start() {
 	dataCh := make(chan Job)
-	insertCh := make(chan []Job)
+	insertCh := make(chan insertChannelPayload)
 
 	go w.bootstrap(dataCh)
 
@@ -68,9 +74,12 @@ func (w Worker) bootstrap(dataCh chan Job) {
 	}
 }
 
-func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
+func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload) {
+	arn := arena.NewArena()
+
 	batchMaxSize := 5000
-	batch := make([]Job, 0, batchMaxSize)
+	batch := arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
+	batchCurrentIndex := 0
 
 	min := 10
 	max := 25
@@ -82,20 +91,28 @@ func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 	for {
 		select {
 		case data := <-dataCh:
-			batch = append(batch, data)
+			batch[batchCurrentIndex] = data
+			batchCurrentIndex += 1
 
 		case <-tick:
-			log.Infof("Insert tick, current batch length is %d", len(batch))
-			if len(batch) > 0 {
-				insertCh <- batch
-				batch = make([]Job, 0, batchMaxSize)
+			log.Infof("Insert tick, current batch length is %d", batchCurrentIndex)
+			if batchCurrentIndex > 0 {
+				insertCh <- insertChannelPayload{
+					batch:    batch[:batchCurrentIndex],
+					batchLen: batchCurrentIndex,
+				}
+
+				arn.Free()
+				arn = arena.NewArena()
+				batch = arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
+				batchCurrentIndex = 0
 				tick = time.Tick(randomTickTime * time.Second)
 			}
 		}
 	}
 }
 
-func (w Worker) processInsert(insertCh chan []Job) {
+func (w Worker) processInsert(insertCh chan insertChannelPayload) {
 	columns := []string{"id", "nickname", "name", "birthdate", "stack", "search"}
 	identifier := pgx.Identifier{"people"}
 
@@ -114,12 +131,12 @@ func (w Worker) processInsert(insertCh chan []Job) {
 
 	for {
 		select {
-		case batch := <-insertCh:
+		case payload := <-insertCh:
 			_, err := w.db.CopyFrom(
 				context.Background(),
 				identifier,
 				columns,
-				pgx.CopyFromSlice(len(batch), copyFromSlice(batch)),
+				pgx.CopyFromSlice(payload.batchLen, copyFromSlice(payload.batch)),
 			)
 
 			if err != nil {
