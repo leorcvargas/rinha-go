@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/pprof"
+	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,11 +34,16 @@ func startProfiling(config *config.Config) {
 		log.Fatal(err)
 	}
 	pprof.WriteHeapProfile(memoryProfFile)
-}
 
-func stopProfiling() {
-	log.Info("Stopping CPU and Memory profiling")
-	pprof.StopCPUProfile()
+	after := time.After(3 * time.Minute)
+
+	go func() {
+		<-after
+		log.Info("Stopping CPU and Memory profiling")
+		pprof.StopCPUProfile()
+		cpuProfFile.Close()
+		memoryProfFile.Close()
+	}()
 }
 
 func NewServer(
@@ -64,10 +70,6 @@ func NewServer(
 		},
 		OnStop: func(ctx context.Context) error {
 			log.Info("Stopping the server...")
-
-			if config.Profiling.Enabled {
-				stopProfiling()
-			}
 
 			return router.ShutdownWithContext(ctx)
 		},

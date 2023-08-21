@@ -17,7 +17,7 @@ COPY ./pkg ./pkg
 ENV GOEXPERIMENT arenas
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o ./bin/rinha ./cmd/rinha.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -pgo=./cmd/cpu.pprof -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM alpine:3.14.10
 

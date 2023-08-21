@@ -2,7 +2,7 @@ dev:
 	go run ./cmd/rinha.go
 
 build: clean deps
-	CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
+	CGO_ENABLED=0 go build -pgo=./cmd/cpu.pprof -v -o ./bin/rinha ./cmd/rinha.go
 
 deps:
 	go mod tidy

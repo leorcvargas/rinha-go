@@ -14,6 +14,8 @@ import (
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 
+	_ "net/http/pprof"
+
 	_ "go.uber.org/automaxprocs"
 )
 
