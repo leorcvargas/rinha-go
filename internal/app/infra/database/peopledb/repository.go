@@ -2,13 +2,11 @@ package peopledb
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/redis/rueidis"
@@ -21,49 +19,11 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) error {
-	errorCh := make(chan error, 2)
-	defer close(errorCh)
+	p.jobQueue <- Job{Payload: person}
 
-	go func() {
-		_, err := p.db.Exec(
-			context.Background(),
-			InsertPersonQuery,
-			person.ID,
-			person.Nickname,
-			person.Name,
-			person.Birthdate,
-			person.StackStr(),
-			person.SearchStr(),
-		)
-
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				errorCh <- people.ErrNicknameTaken
-				return
-			}
-
-			errorCh <- err
-			return
-		}
-
-		errorCh <- nil
-	}()
-
-	go func() {
-		err := p.cache.Set(person.ID, person)
-		if err != nil {
-			log.Errorf("Error inserting person in cache: %v", err)
-		}
-
-		errorCh <- nil
-	}()
-
-	for i := 0; i < 2; i++ {
-		err := <-errorCh
-		if err != nil {
-			return err
-		}
+	if err := p.cache.Set(person.ID, person); err != nil {
+		log.Errorf("Error setting person in cache: %v", err)
+		return err
 	}
 
 	return nil
