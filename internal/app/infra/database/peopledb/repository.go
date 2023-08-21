@@ -2,27 +2,43 @@ package peopledb
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
-	"github.com/redis/rueidis"
 )
 
 type PersonRepository struct {
-	db       *pgxpool.Pool
-	cache    *PeopleDbCache
-	jobQueue JobQueue
+	db *pgxpool.Pool
+	// cache    *PeopleDbCache
+	// jobQueue JobQueue
 }
 
 func (p *PersonRepository) Create(person *people.Person) error {
-	p.jobQueue <- Job{Payload: person}
+	_, err := p.db.Exec(
+		context.Background(),
+		InsertPersonQuery,
+		person.ID,
+		person.Nickname,
+		person.Name,
+		person.Birthdate,
+		person.StackStr(),
+		person.SearchStr(),
+	)
 
-	if err := p.cache.Set(person.ID, person); err != nil {
-		log.Errorf("Error setting person in cache: %v", err)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return people.ErrNicknameTaken
+		}
+
+		log.Errorf("Failed to create person in the database %w", err)
+
 		return err
 	}
 
@@ -30,22 +46,22 @@ func (p *PersonRepository) Create(person *people.Person) error {
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
-	cachedPerson, err := p.cache.Get(id)
+	// cachedPerson, err := p.cache.Get(id)
 
-	if err != nil && !rueidis.IsRedisNil(err) {
-		log.Errorf("Error getting person from cache: %v", err)
-		return nil, err
-	}
+	// if err != nil && !rueidis.IsRedisNil(err) {
+	// 	log.Errorf("Error getting person from cache: %v", err)
+	// 	return nil, err
+	// }
 
-	if cachedPerson != nil {
-		return cachedPerson, nil
-	}
+	// if cachedPerson != nil {
+	// 	return cachedPerson, nil
+	// }
 
 	var person people.Person
 	var strStack string
 	var birthdate time.Time
 
-	err = p.db.QueryRow(
+	err := p.db.QueryRow(
 		context.Background(),
 		SelectPersonByIDQuery,
 		id,
@@ -75,16 +91,16 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	sanitizedTerm := strings.ToLower(term)
 
-	cachedResult, err := p.cache.GetSearch(sanitizedTerm)
-	if err != nil && !rueidis.IsRedisNil(err) {
-		log.Errorf("Error getting search from cache: %v", err)
-		return nil, err
-	}
+	// cachedResult, err := p.cache.GetSearch(sanitizedTerm)
+	// if err != nil && !rueidis.IsRedisNil(err) {
+	// 	log.Errorf("Error getting search from cache: %v", err)
+	// 	return nil, err
+	// }
 
-	if len(cachedResult) > 0 {
-		log.Infof("Returning cached search result for term: %s", sanitizedTerm)
-		return cachedResult, nil
-	}
+	// if len(cachedResult) > 0 {
+	// 	log.Infof("Returning cached search result for term: %s", sanitizedTerm)
+	// 	return cachedResult, nil
+	// }
 
 	rows, err := p.db.Query(
 		context.Background(),
@@ -101,13 +117,13 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		return nil, err
 	}
 
-	if len(result) > 0 {
-		go func() {
-			if err := p.cache.SetSearch(sanitizedTerm, result); err != nil {
-				log.Errorf("Error setting search result in cache: %v", err)
-			}
-		}()
-	}
+	// if len(result) > 0 {
+	// 	go func() {
+	// 		if err := p.cache.SetSearch(sanitizedTerm, result); err != nil {
+	// 			log.Errorf("Error setting search result in cache: %v", err)
+	// 		}
+	// 	}()
+	// }
 
 	return result, nil
 }
@@ -130,9 +146,9 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	return total, nil
 }
 
-func (p *PersonRepository) CheckNicknameExists(nickname string) (bool, error) {
-	return p.cache.GetNickname(nickname)
-}
+// func (p *PersonRepository) CheckNicknameExists(nickname string) (bool, error) {
+// 	return p.cache.GetNickname(nickname)
+// }
 
 func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0)
@@ -162,10 +178,14 @@ func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, erro
 	return result, nil
 }
 
-func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, jobQueue JobQueue) people.Repository {
+func NewPersonRepository(
+	db *pgxpool.Pool,
+	// cache *PeopleDbCache,
+	// jobQueue JobQueue,
+) people.Repository {
 	return &PersonRepository{
-		db:       db,
-		cache:    cache,
-		jobQueue: jobQueue,
+		db: db,
+		// cache:    cache,
+		// jobQueue: jobQueue,
 	}
 }

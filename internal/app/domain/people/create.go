@@ -5,18 +5,9 @@ type CreatePerson struct {
 }
 
 func (c *CreatePerson) Execute(nickname string, name string, birthdate string, stack []string) (*Person, error) {
-	nicknameTaken, err := c.repository.CheckNicknameExists(nickname)
-	if err != nil {
-		return nil, err
-	}
-
-	if nicknameTaken {
-		return nil, ErrNicknameTaken
-	}
-
 	person := NewPerson(nickname, name, birthdate, stack)
 
-	err = c.repository.Create(person)
+	err := c.repository.Create(person)
 	if err != nil {
 		return nil, err
 	}

@@ -21,8 +21,9 @@ services:
       - ./scripts/postgres/:/docker-entrypoint-initdb.d/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 15s
+      interval: 5s
       timeout: 25s
+      retries: 5
     command:
       [
         "postgres",
@@ -36,11 +37,11 @@ services:
     hostname: api1
     environment:
       - ENABLE_SONIC_JSON=1
-      - DB_HOST=db
+      - DB_HOST=pgb
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=rinha
-      - DB_PORT=5432
+      - DB_PORT=6432
       - CPU_PROFILE=/app/prof/cpu-1.prof
       - MEM_PROFILE=/app/prof/mem-1.prof
       - CACHE_HOST=cache
@@ -66,11 +67,11 @@ services:
     hostname: api2
     environment:
       - ENABLE_SONIC_JSON=1
-      - DB_HOST=db
+      - DB_HOST=pgb
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=rinha
-      - DB_PORT=5432
+      - DB_PORT=6432
       - CPU_PROFILE=/app/prof/cpu-1.prof
       - MEM_PROFILE=/app/prof/mem-1.prof
       - CACHE_HOST=cache
@@ -106,19 +107,30 @@ services:
           cpus: "0.25"
           memory: "0.5GB"
 
-  cache:
-    image: eqalpha/keydb:latest
-    hostname: cache
+  pgbouncer:
+    container_name: pgbouncer
+    hostname: pgb
+    image: bitnami/pgbouncer:latest
     ports:
-      - "6379:6379"
+      - "6432:6432"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./pgbouncer.ini:/bitnami/pgbouncer/conf/pgbouncer.ini
+      - ./userlist.txt:/etc/pgbouncer/userlist.txt
+    environment:
+      - PGBOUNCER_DATABASES=*:host=db port=5432
+      - POSTGRESQL_HOST=db
+      - POSTGRESQL_PASSWORD=postgres
+      - PGBOUNCER_LISTEN_PORT=6432
+      - PGBOUNCER_LISTEN_ADDR=*
+      - PGBOUNCER_ADMIN_USERS=admin
     deploy:
       resources:
         limits:
           cpus: "0.15"
           memory: "0.5GB"
-    volumes:
-      - ./scripts/keydb/:/etc/keydb/
-    command: ["keydb-server", "/etc/keydb/keydb.conf"]
 
 volumes:
   postgres-db:

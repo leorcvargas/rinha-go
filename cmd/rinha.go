@@ -7,7 +7,6 @@ import (
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/config"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database"
-	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/httpapi"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/httpapi/controllers"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/httpapi/routers"
@@ -32,9 +31,9 @@ func main() {
 		httpapi.Module,
 		database.Module,
 		people.Module,
-		fx.Invoke(func(dispatcher *peopledb.Dispatcher) {
-			go dispatcher.Run()
-		}),
+		// fx.Invoke(func(dispatcher *peopledb.Dispatcher) {
+		// 	go dispatcher.Run()
+		// }),
 		fx.Invoke(func(*fasthttp.Server) {}),
 		fx.NopLogger,
 	)
