@@ -92,7 +92,7 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 	tickInsertRate := randomTime(5000, 10000) + tickInsertRateOffset
 	tickInsert := time.Tick(tickInsertRate)
 
-	tickArenaClear := time.Tick(5 * time.Minute)
+	tickArenaClear := time.Tick(1 * time.Minute)
 
 	for {
 		select {
@@ -101,8 +101,8 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 			batchCurrentIndex += 1
 
 		case <-tickInsert:
-			log.Infof("Tick insert (len=%d)", batchCurrentIndex)
 			if batchCurrentIndex > 0 {
+				log.Infof("Tick insert (len=%d)", batchCurrentIndex)
 				insertCh <- insertChannelPayload{
 					batch:    batch[:batchCurrentIndex],
 					batchLen: batchCurrentIndex,
@@ -113,6 +113,7 @@ func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload)
 			}
 
 		case <-tickArenaClear:
+			log.Info("Clearing arena")
 			if batchCurrentIndex > 0 {
 				insertCh <- insertChannelPayload{
 					batch:    batch[:batchCurrentIndex],
