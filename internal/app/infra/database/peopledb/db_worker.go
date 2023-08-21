@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	MaxWorker = 2
+	MaxWorker = 1
 	MaxQueue  = 1
 )
 
