@@ -72,8 +72,8 @@ func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 	batchMaxSize := 5000
 	batch := make([]Job, 0, batchMaxSize)
 
-	min := 5
-	max := 15
+	min := 10
+	max := 25
 
 	randomTickTime := time.Duration(rand.Intn(max-min) + min)
 
