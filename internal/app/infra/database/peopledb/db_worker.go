@@ -68,7 +68,7 @@ func (w Worker) Start() {
 	}()
 
 	go func() {
-		batchMaxSize := 500
+		batchMaxSize := 1000
 		batch := make([]Job, 0, batchMaxSize)
 		tick := time.Tick(10 * time.Second)
 
