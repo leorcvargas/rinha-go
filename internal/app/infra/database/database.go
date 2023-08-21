@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
+	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/config"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/database/peopledb"
 )
 
@@ -17,15 +17,15 @@ var (
 	once sync.Once
 )
 
-func NewPostgresDatabase() *pgxpool.Pool {
+func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 	once.Do(func() {
 		connUrl := fmt.Sprintf(
 			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-			os.Getenv("DB_USER"),
-			os.Getenv("DB_PASSWORD"),
-			os.Getenv("DB_HOST"),
-			os.Getenv("DB_PORT"),
-			os.Getenv("DB_NAME"),
+			config.Database.User,
+			config.Database.Password,
+			config.Database.Host,
+			config.Database.Port,
+			config.Database.Name,
 		)
 
 		poolConfig, err := pgxpool.ParseConfig(connUrl)

@@ -2,6 +2,11 @@
 bin/
 dist/
 
+# Node.js
 node_modules
 
-prof
+# Golang Prof
+prof/
+
+# Env
+.env

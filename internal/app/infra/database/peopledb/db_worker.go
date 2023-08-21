@@ -96,23 +96,31 @@ func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 }
 
 func (w Worker) processInsert(insertCh chan []Job) {
+	columns := []string{"id", "nickname", "name", "birthdate", "stack", "search"}
+	identifier := pgx.Identifier{"people"}
+
+	copyFromSlice := func(batch []Job) func(i int) ([]interface{}, error) {
+		return func(i int) ([]interface{}, error) {
+			return []interface{}{
+				batch[i].Payload.ID,
+				batch[i].Payload.Nickname,
+				batch[i].Payload.Name,
+				batch[i].Payload.Birthdate,
+				batch[i].Payload.StackStr(),
+				batch[i].Payload.SearchStr(),
+			}, nil
+		}
+	}
+
 	for {
 		select {
 		case batch := <-insertCh:
 			_, err := w.db.CopyFrom(
 				context.Background(),
-				pgx.Identifier{"people"},
-				[]string{"id", "nickname", "name", "birthdate", "stack", "search"},
-				pgx.CopyFromSlice(len(batch), func(i int) ([]interface{}, error) {
-					return []interface{}{
-						batch[i].Payload.ID,
-						batch[i].Payload.Nickname,
-						batch[i].Payload.Name,
-						batch[i].Payload.Birthdate,
-						batch[i].Payload.StackStr(),
-						batch[i].Payload.SearchStr(),
-					}, nil
-				}))
+				identifier,
+				columns,
+				pgx.CopyFromSlice(len(batch), copyFromSlice(batch)),
+			)
 
 			if err != nil {
 				log.Errorf("Error on insert batch: %v", err)

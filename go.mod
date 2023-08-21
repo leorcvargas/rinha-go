@@ -10,6 +10,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.48.0
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.4.3
+	github.com/joho/godotenv v1.5.1
 	github.com/redis/rueidis v1.0.15
 	github.com/valyala/fasthttp v1.48.0
 	go.uber.org/fx v1.20.0

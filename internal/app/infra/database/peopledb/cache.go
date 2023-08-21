@@ -2,6 +2,8 @@ package peopledb
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -134,8 +136,14 @@ func (p *PeopleDbCache) GetSearch(term string) ([]people.Person, error) {
 }
 
 func NewPeopleDbCache() *PeopleDbCache {
+	address := fmt.Sprintf(
+		"%s:%s",
+		os.Getenv("CACHE_HOST"),
+		os.Getenv("CACHE_PORT"),
+	)
+
 	opts := rueidis.ClientOption{
-		InitAddress: []string{"cache:6379"},
+		InitAddress: []string{address},
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {

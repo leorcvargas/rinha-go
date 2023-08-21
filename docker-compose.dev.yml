@@ -43,6 +43,10 @@ services:
       - DB_PORT=5432
       - CPU_PROFILE=/app/prof/cpu-1.prof
       - MEM_PROFILE=/app/prof/mem-1.prof
+      - CACHE_HOST=cache
+      - CACHE_PORT=6379
+      - SERVER_PORT=8080
+      - ENABLE_PROFILING=0
     volumes:
       - ./prof:/app/prof
     depends_on:
@@ -67,8 +71,12 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=rinha
       - DB_PORT=5432
-      - CPU_PROFILE=/app/prof/cpu-2.prof
-      - MEM_PROFILE=/app/prof/mem-2.prof
+      - CPU_PROFILE=/app/prof/cpu-1.prof
+      - MEM_PROFILE=/app/prof/mem-1.prof
+      - CACHE_HOST=cache
+      - CACHE_PORT=6379
+      - SERVER_PORT=8080
+      - ENABLE_PROFILING=0
     volumes:
       - ./prof:/app/prof
     depends_on:
