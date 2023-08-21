@@ -63,7 +63,7 @@ func NewServer(
 
 				addr := fmt.Sprintf(":%s", config.Server.Port)
 				if err := router.Listen(addr); err != nil {
-					log.Fatalf("Error starting the server: %s\n", err)
+					log.Fatalf("Error starting the server: %w\n", err)
 				}
 			}()
 			return nil

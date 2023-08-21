@@ -18,7 +18,7 @@ var (
 func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 	once.Do(func() {
 		connStr := fmt.Sprintf(
-			"user=%s password=%s host=%s port=%s dbname=%s sslmode=disable default_query_exec_mode=simple_protocol",
+			"user=%s password=%s host=%s port=%s dbname=%s sslmode=disable default_query_exec_mode=cache_describe",
 			config.Database.User,
 			config.Database.Password,
 			config.Database.Host,
