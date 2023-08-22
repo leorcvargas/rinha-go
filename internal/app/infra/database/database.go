@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
@@ -33,8 +34,10 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 			log.Fatalln("Unable to parse connection url:", err)
 		}
 
-		poolConfig.MaxConns = 100
-		poolConfig.MinConns = 10
+		poolConfig.MaxConnIdleTime = 10 * time.Second
+		poolConfig.MaxConnLifetime = 30 * time.Second
+		poolConfig.MaxConns = 10
+		poolConfig.MinConns = 5
 
 		db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 		if err != nil {
