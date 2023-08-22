@@ -6,7 +6,7 @@ import (
 )
 
 var Module = fx.Provide(
-	NewPeopleDbCache,
+	NewCache,
 	NewMem,
 	NewDispatcher,
 	NewJobQueue,

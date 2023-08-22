@@ -14,7 +14,7 @@ import (
 
 type PersonRepository struct {
 	db       *pgxpool.Pool
-	cache    *PeopleDbCache
+	cache    *Cache
 	jobQueue JobQueue
 }
 
@@ -144,7 +144,7 @@ func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, erro
 	return result, nil
 }
 
-func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, jobQueue JobQueue) people.Repository {
+func NewPersonRepository(db *pgxpool.Pool, cache *Cache, jobQueue JobQueue) people.Repository {
 	return &PersonRepository{
 		db:       db,
 		cache:    cache,

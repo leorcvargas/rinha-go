@@ -13,12 +13,12 @@ import (
 
 var ctx = context.Background()
 
-type PeopleDbCache struct {
+type Cache struct {
 	peopleClient   rueidis.Client
 	nicknameClient rueidis.Client
 }
 
-func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
+func (p *Cache) Get(key string) (*people.Person, error) {
 	getCmd := p.peopleClient.
 		B().
 		Get().
@@ -39,7 +39,7 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	return &person, nil
 }
 
-func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
+func (p *Cache) GetNickname(nickname string) (bool, error) {
 	getNicknameCmd := p.nicknameClient.
 		B().
 		Getbit().
@@ -50,7 +50,7 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	return p.nicknameClient.Do(ctx, getNicknameCmd).AsBool()
 }
 
-func (p *PeopleDbCache) Set(person *people.Person) error {
+func (p *Cache) Set(person *people.Person) error {
 	errorChannel := make(chan error, 2)
 
 	go func() {
@@ -106,7 +106,7 @@ func (p *PeopleDbCache) Set(person *people.Person) error {
 	return nil
 }
 
-func NewPeopleDbCache() *PeopleDbCache {
+func NewCache() *Cache {
 	address := fmt.Sprintf(
 		"%s:%s",
 		os.Getenv("CACHE_HOST"),
@@ -133,7 +133,7 @@ func NewPeopleDbCache() *PeopleDbCache {
 		panic(err)
 	}
 
-	return &PeopleDbCache{
+	return &Cache{
 		peopleClient:   peopleClient,
 		nicknameClient: nicknameClient,
 	}
