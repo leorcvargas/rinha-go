@@ -69,12 +69,12 @@ func (w Worker) bootstrap(dataCh chan Job) {
 }
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
+	tickInsertRateOffset := w.getRandomTickTime(1000, 3000)
+	tickInsertRate := time.Duration(10000*time.Millisecond) + tickInsertRateOffset
+	tickInsert := time.Tick(tickInsertRate)
+
 	batchMaxSize := 10000
 	batch := make([]Job, 0, batchMaxSize)
-
-	tickInsertRateOffset := w.getRandomTickTime(1000, 3000)
-	tickInsertRate := w.getRandomTickTime(10000, 20000) + tickInsertRateOffset
-	tickInsert := time.Tick(tickInsertRate)
 
 	for {
 		select {
