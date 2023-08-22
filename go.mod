@@ -6,7 +6,6 @@ toolchain go1.21.0
 
 require (
 	github.com/bytedance/sonic v1.10.0
-	github.com/go-faker/faker/v4 v4.1.1
 	github.com/gofiber/fiber/v2 v2.48.0
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.4.3
