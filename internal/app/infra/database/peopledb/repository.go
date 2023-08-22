@@ -90,7 +90,6 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 		context.Background(),
 		SearchPeopleTrgmQuery,
 		sanitizedTerm,
-		pgx.QueryExecModeCacheStatement,
 	)
 	if err != nil {
 		log.Errorf("Error executing trigram search: %v", err)
