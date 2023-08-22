@@ -69,7 +69,7 @@ func (w Worker) bootstrap(dataCh chan Job) {
 }
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
-	batchMaxSize := 5000
+	batchMaxSize := 500
 	batch := make([]Job, 0, batchMaxSize)
 
 	tickInsertRateOffset := w.getRandomTickTime(1000, 5000)
@@ -80,6 +80,13 @@ func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 		select {
 		case data := <-dataCh:
 			batch = append(batch, data)
+
+			if len(batch) >= batchMaxSize {
+				log.Infof("Batch max size reached (len=%d)", batchMaxSize)
+				insertCh <- batch
+
+				batch = make([]Job, 0, batchMaxSize)
+			}
 
 		case <-tickInsert:
 			batchLen := len(batch)
