@@ -17,8 +17,9 @@ services:
           cpus: "0.7"
           memory: "1GB"
     volumes:
-      - postgres-db:/var/lib/postgresql/data
-      - ./scripts/postgres/:/docker-entrypoint-initdb.d/
+      - postgres-rinha-go-db:/var/lib/postgresql/data
+      - ./scripts/postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./scripts/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 15s
@@ -123,7 +124,7 @@ services:
     command: ["keydb-server", "/etc/keydb/keydb.conf"]
 
 volumes:
-  postgres-db:
+  postgres-rinha-go-db:
 
 networks:
   default:
