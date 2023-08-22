@@ -95,13 +95,19 @@ func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 }
 
 func (w Worker) processInsert(insertCh chan []Job) {
+	conn, err := w.db.Acquire(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to acquire connection: %v", err)
+	}
+	defer conn.Release()
+
 	columns := []string{"id", "nickname", "name", "birthdate", "stack", "search"}
 	identifier := pgx.Identifier{"people"}
 
 	for {
 		select {
 		case payload := <-insertCh:
-			_, err := w.db.CopyFrom(
+			_, err := conn.CopyFrom(
 				context.Background(),
 				identifier,
 				columns,
