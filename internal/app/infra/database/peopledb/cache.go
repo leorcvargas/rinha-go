@@ -23,9 +23,9 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 		B().
 		Get().
 		Key(key).
-		Cache()
+		Build()
 
-	personBytes, err := p.peopleClient.DoCache(ctx, getCmd, time.Hour).AsBytes()
+	personBytes, err := p.peopleClient.Do(ctx, getCmd).AsBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +45,9 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 		Getbit().
 		Key(nickname).
 		Offset(0).
-		Cache()
+		Build()
 
-	return p.nicknameClient.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
+	return p.nicknameClient.Do(ctx, getNicknameCmd).AsBool()
 }
 
 func (p *PeopleDbCache) Set(person *people.Person) error {
