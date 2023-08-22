@@ -14,7 +14,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.7"
+          cpus: "0.75"
           memory: "1GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
@@ -130,7 +130,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.15"
           memory: "0.5GB"
     volumes:
       - ./scripts/keydb/:/etc/keydb/
