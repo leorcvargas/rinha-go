@@ -18,8 +18,8 @@ services:
           memory: "1GB"
     volumes:
       - postgres-rinha-go-db:/var/lib/postgresql/data
-      - ./scripts/postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-      - ./scripts/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./scripts/postgres/init/:/docker-entrypoint-initdb.d/
+      - ./scripts/postgres/conf/:/etc/postgresql/
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 15s
