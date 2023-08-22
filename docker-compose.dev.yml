@@ -47,6 +47,7 @@ services:
       - CACHE_PORT=6379
       - SERVER_PORT=8080
       - ENABLE_PROFILING=0
+      - ENABLE_PREFORK=1
     volumes:
       - ./prof:/app/prof
     depends_on:
@@ -77,6 +78,7 @@ services:
       - CACHE_PORT=6379
       - SERVER_PORT=8080
       - ENABLE_PROFILING=0
+      - ENABLE_PREFORK=1
     volumes:
       - ./prof:/app/prof
     depends_on:

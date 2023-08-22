@@ -18,7 +18,7 @@ func MakeRouter(
 	cfg := fiber.Config{
 		AppName:       "rinha-go by @leorcvargas",
 		CaseSensitive: true,
-		Prefork:       false,
+		Prefork:       config.Server.Prefork,
 	}
 
 	if config.Server.UseSonic {

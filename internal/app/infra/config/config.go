@@ -19,6 +19,7 @@ type Config struct {
 	Server struct {
 		Port     string
 		UseSonic bool
+		Prefork  bool
 	}
 
 	Profiling struct {
@@ -55,9 +56,11 @@ func NewConfig() *Config {
 		Server: struct {
 			Port     string
 			UseSonic bool
+			Prefork  bool
 		}{
 			Port:     env.GetEnvOrDie("SERVER_PORT"),
 			UseSonic: env.GetEnvOrDie("ENABLE_SONIC_JSON") == "1",
+			Prefork:  env.GetEnvOrDie("ENABLE_PREFORK") == "1",
 		},
 
 		Profiling: struct {
