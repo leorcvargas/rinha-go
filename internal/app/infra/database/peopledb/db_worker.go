@@ -69,7 +69,7 @@ func (w Worker) bootstrap(dataCh chan Job) {
 }
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
-	batchMaxSize := 1000
+	batchMaxSize := 100
 	batch := make([]Job, 0, batchMaxSize)
 
 	tickInsertRateOffset := w.getRandomTickTime(1000, 5000)
