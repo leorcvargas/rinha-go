@@ -28,7 +28,7 @@ services:
       [
         "postgres",
         "-c",
-        "config_file=/docker-entrypoint-initdb.d/postgresql.conf",
+        "config_file=/etc/postgresql/postgresql.conf",
       ]
 
   api1:
