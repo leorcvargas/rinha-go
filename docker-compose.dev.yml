@@ -14,7 +14,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.75"
+          cpus: "0.85"
           memory: "1GB"
     volumes:
       - postgres-db:/var/lib/postgresql/data
@@ -34,6 +34,8 @@ services:
     build: .
     restart: always
     hostname: api1
+    sysctls:
+      net.core.somaxconn: 4096
     environment:
       - ENABLE_SONIC_JSON=1
       - DB_HOST=db
@@ -65,6 +67,8 @@ services:
     build: .
     restart: always
     hostname: api2
+    sysctls:
+      net.core.somaxconn: 4096
     environment:
       - ENABLE_SONIC_JSON=1
       - DB_HOST=db
@@ -95,6 +99,8 @@ services:
   nginx:
     image: nginx
     hostname: api
+    sysctls:
+      net.core.somaxconn: 4096
     volumes:
       - ./scripts/nginx/:/etc/nginx/
     depends_on:
@@ -105,7 +111,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.1"
           memory: "0.5GB"
 
   cache:
