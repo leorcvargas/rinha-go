@@ -18,6 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o ./bin/rinha ./cmd/rinha
 
 FROM alpine:3.14.10
 
+RUN apk add --no-cache dumb-init
+
 EXPOSE 8080
 
 # Copy files from builder stage
@@ -26,6 +28,8 @@ COPY --from=builder /app/bin/rinha .
 # Increase GC percentage and limit the number of OS threads
 ENV GOGC 1000
 ENV GOMAXPROCS 1
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # Run binary
 CMD ["/rinha"]
