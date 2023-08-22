@@ -13,6 +13,11 @@ import (
 
 var ctx = context.Background()
 
+const (
+	searchExpiration = 1.5 * 60000 * time.Millisecond
+	personExpiration = time.Minute
+)
+
 type Cache struct {
 	client rueidis.Client
 }
@@ -60,7 +65,7 @@ func (p *Cache) Set(person *people.Person) error {
 		Set().
 		Key("person:" + person.ID).
 		Value(item).
-		Ex(time.Minute).
+		Ex(personExpiration).
 		Build()
 
 	setNicknameCmd := p.client.
@@ -97,7 +102,7 @@ func (p *Cache) SetSearch(term string, result []people.Person) error {
 		Set().
 		Key("search:" + term).
 		Value(item).
-		Ex(1.5 * 60000 * time.Millisecond).
+		Ex(searchExpiration).
 		Build()
 
 	return p.client.Do(ctx, setSearchCmd).Error()
@@ -114,7 +119,7 @@ func (p *Cache) GetSearch(term string) ([]people.Person, error) {
 		DoCache(
 			ctx,
 			getSearchCmd,
-			1.5*60000*time.Millisecond,
+			searchExpiration,
 		).
 		AsBytes()
 
@@ -139,8 +144,8 @@ func NewCache() *Cache {
 	)
 
 	opts := rueidis.ClientOption{
-		InitAddress:      []string{address},
-		AlwaysPipelining: true,
+		InitAddress:       []string{address},
+		PipelineMultiplex: -1,
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
