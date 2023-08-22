@@ -111,12 +111,14 @@ services:
     hostname: cache
     ports:
       - "6379:6379"
+    volumes:
+      - ./scripts/redis/:/etc/redis/
+    command: ["redis-server", "/etc/redis/redis.conf"]
     deploy:
       resources:
         limits:
           cpus: "0.15"
           memory: "0.5GB"
-    command: ["redis-server", "--save", '""', "--appendonly", "no"]
 
 volumes:
   postgres-db:
