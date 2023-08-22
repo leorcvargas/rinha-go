@@ -19,7 +19,7 @@ type PersonRepository struct {
 }
 
 func (p *PersonRepository) Create(person *people.Person) error {
-	if err := p.cache.Set(person.ID, person); err != nil {
+	if err := p.cache.Set(person); err != nil {
 		log.Errorf("Error setting person in cache: %v", err)
 		return err
 	}
@@ -75,17 +75,6 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	sanitizedTerm := strings.ToLower(term)
 
-	// cachedResult, err := p.cache.GetSearch(sanitizedTerm)
-	// if err != nil && !rueidis.IsRedisNil(err) {
-	// 	log.Errorf("Error getting search from cache: %v", err)
-	// 	return nil, err
-	// }
-
-	// if len(cachedResult) > 0 {
-	// 	log.Infof("Returning cached search result for term: %s", sanitizedTerm)
-	// 	return cachedResult, nil
-	// }
-
 	rows, err := p.db.Query(
 		context.Background(),
 		SearchPeopleTrgmQuery,
@@ -97,20 +86,7 @@ func (p *PersonRepository) Search(term string) ([]people.Person, error) {
 	}
 	defer rows.Close()
 
-	result, err := p.mapSearchResult(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	// if len(result) > 0 {
-	// 	go func() {
-	// 		if err := p.cache.SetSearch(sanitizedTerm, result); err != nil {
-	// 			log.Errorf("Error setting search result in cache: %v", err)
-	// 		}
-	// 	}()
-	// }
-
-	return result, nil
+	return p.mapSearchResult(rows)
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {

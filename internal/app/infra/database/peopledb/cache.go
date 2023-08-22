@@ -14,21 +14,18 @@ import (
 var ctx = context.Background()
 
 type PeopleDbCache struct {
-	client rueidis.Client
-}
-
-func (p *PeopleDbCache) Cache() rueidis.Client {
-	return p.client
+	peopleClient   rueidis.Client
+	nicknameClient rueidis.Client
 }
 
 func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
-	getCmd := p.client.
+	getCmd := p.peopleClient.
 		B().
 		Get().
-		Key("person:" + key).
+		Key(key).
 		Cache()
 
-	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
+	personBytes, err := p.peopleClient.DoCache(ctx, getCmd, time.Hour).AsBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -43,44 +40,63 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 }
 
 func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
-	getNicknameCmd := p.client.
+	getNicknameCmd := p.nicknameClient.
 		B().
 		Getbit().
-		Key("nickname:" + nickname).
+		Key(nickname).
 		Offset(0).
 		Cache()
 
-	return p.client.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
+	return p.nicknameClient.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
 }
 
-func (p *PeopleDbCache) Set(key string, person *people.Person) error {
-	item, err := sonic.MarshalString(person)
-	if err != nil {
-		return err
-	}
+func (p *PeopleDbCache) Set(person *people.Person) error {
+	errorChannel := make(chan error, 2)
 
-	setPersonCmd := p.client.
-		B().
-		Set().
-		Key("person:" + person.ID).
-		Value(item).
-		Ex(15 * time.Second).
-		Build()
+	go func() {
+		item, marshalError := sonic.MarshalString(person)
+		if marshalError != nil {
+			errorChannel <- marshalError
+			return
+		}
 
-	setNicknameCmd := p.client.
-		B().
-		Setbit().
-		Key("nickname:" + person.Nickname).
-		Offset(0).
-		Value(1).
-		Build()
+		cmd := p.peopleClient.
+			B().
+			Set().
+			Key(person.ID).
+			Value(item).
+			Ex(15 * time.Minute).
+			Build()
 
-	cmds := make(rueidis.Commands, 0, 2)
-	cmds = append(cmds, setPersonCmd)
-	cmds = append(cmds, setNicknameCmd)
+		setError := p.peopleClient.Do(ctx, cmd).Error()
+		if setError != nil {
+			errorChannel <- setError
+			return
+		}
 
-	for _, res := range p.client.DoMulti(ctx, cmds...) {
-		err := res.Error()
+		errorChannel <- nil
+	}()
+
+	go func() {
+		cmd := p.nicknameClient.
+			B().
+			Setbit().
+			Key(person.Nickname).
+			Offset(0).
+			Value(1).
+			Build()
+
+		setError := p.nicknameClient.Do(ctx, cmd).Error()
+		if setError != nil {
+			errorChannel <- setError
+			return
+		}
+
+		errorChannel <- nil
+	}()
+
+	for i := 0; i < 2; i++ {
+		err := <-errorChannel
 
 		if err != nil {
 			return err
@@ -88,51 +104,6 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) error {
 	}
 
 	return nil
-}
-
-func (p *PeopleDbCache) SetSearch(term string, result []people.Person) error {
-	item, err := sonic.MarshalString(result)
-	if err != nil {
-		return err
-	}
-
-	setSearchCmd := p.client.
-		B().
-		Set().
-		Key("search:" + term).
-		Value(item).
-		Ex(15 * time.Second).
-		Build()
-
-	return p.client.Do(ctx, setSearchCmd).Error()
-}
-
-func (p *PeopleDbCache) GetSearch(term string) ([]people.Person, error) {
-	getSearchCmd := p.client.
-		B().
-		Get().
-		Key("search:" + term).
-		Cache()
-
-	resultBytes, err := p.client.
-		DoCache(
-			ctx,
-			getSearchCmd,
-			15*time.Second,
-		).
-		AsBytes()
-
-	if err != nil {
-		return nil, err
-	}
-
-	var result []people.Person
-	err = sonic.Unmarshal(resultBytes, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
 
 func NewPeopleDbCache() *PeopleDbCache {
@@ -145,13 +116,25 @@ func NewPeopleDbCache() *PeopleDbCache {
 	opts := rueidis.ClientOption{
 		InitAddress:      []string{address},
 		AlwaysPipelining: true,
+		SelectDB:         0,
 	}
-	client, err := rueidis.NewClient(opts)
+	peopleClient, err := rueidis.NewClient(opts)
+	if err != nil {
+		panic(err)
+	}
+
+	opts = rueidis.ClientOption{
+		InitAddress:      []string{address},
+		AlwaysPipelining: true,
+		SelectDB:         1,
+	}
+	nicknameClient, err := rueidis.NewClient(opts)
 	if err != nil {
 		panic(err)
 	}
 
 	return &PeopleDbCache{
-		client: client,
+		peopleClient:   peopleClient,
+		nicknameClient: nicknameClient,
 	}
 }
