@@ -60,7 +60,7 @@ func (p *Cache) Set(person *people.Person) error {
 		Set().
 		Key("person:" + person.ID).
 		Value(item).
-		Ex(15 * time.Second).
+		Ex(time.Minute).
 		Build()
 
 	setNicknameCmd := p.client.
@@ -97,7 +97,7 @@ func (p *Cache) SetSearch(term string, result []people.Person) error {
 		Set().
 		Key("search:" + term).
 		Value(item).
-		Ex(15 * time.Second).
+		Ex(time.Minute).
 		Build()
 
 	return p.client.Do(ctx, setSearchCmd).Error()
