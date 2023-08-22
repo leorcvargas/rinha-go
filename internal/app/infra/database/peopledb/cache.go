@@ -21,7 +21,7 @@ func (p *Cache) Get(key string) (*people.Person, error) {
 	getCmd := p.client.
 		B().
 		Get().
-		Key(key).
+		Key("person:" + key).
 		Cache()
 
 	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
@@ -42,7 +42,7 @@ func (p *Cache) GetNickname(nickname string) (bool, error) {
 	getNicknameCmd := p.client.
 		B().
 		Getbit().
-		Key(nickname).
+		Key("nickname:" + nickname).
 		Offset(0).
 		Cache()
 
@@ -58,7 +58,7 @@ func (p *Cache) Set(person *people.Person) error {
 	setPersonCmd := p.client.
 		B().
 		Set().
-		Key(person.ID).
+		Key("person:" + person.ID).
 		Value(item).
 		Ex(15 * time.Second).
 		Build()
@@ -66,7 +66,7 @@ func (p *Cache) Set(person *people.Person) error {
 	setNicknameCmd := p.client.
 		B().
 		Setbit().
-		Key(person.Nickname).
+		Key("nickname:" + person.Nickname).
 		Offset(0).
 		Value(1).
 		Build()
@@ -86,6 +86,51 @@ func (p *Cache) Set(person *people.Person) error {
 	return nil
 }
 
+func (p *Cache) SetSearch(term string, result []people.Person) error {
+	item, err := sonic.MarshalString(result)
+	if err != nil {
+		return err
+	}
+
+	setSearchCmd := p.client.
+		B().
+		Set().
+		Key("search:" + term).
+		Value(item).
+		Ex(15 * time.Second).
+		Build()
+
+	return p.client.Do(ctx, setSearchCmd).Error()
+}
+
+func (p *Cache) GetSearch(term string) ([]people.Person, error) {
+	getSearchCmd := p.client.
+		B().
+		Get().
+		Key("search:" + term).
+		Cache()
+
+	resultBytes, err := p.client.
+		DoCache(
+			ctx,
+			getSearchCmd,
+			15*time.Second,
+		).
+		AsBytes()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []people.Person
+	err = sonic.Unmarshal(resultBytes, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func NewCache() *Cache {
 	address := fmt.Sprintf(
 		"%s:%s",
@@ -102,7 +147,5 @@ func NewCache() *Cache {
 		panic(err)
 	}
 
-	return &Cache{
-		client: client,
-	}
+	return &Cache{client: client}
 }
