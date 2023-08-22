@@ -30,6 +30,7 @@ COPY --from=builder /app/bin/rinha .
 
 # Increase GC percentage and limit the number of OS threads
 ENV GOGC 1000
+ENV GOMAXPROCS 2
 
 # Set entrypoint
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

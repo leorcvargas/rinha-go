@@ -96,7 +96,6 @@ func NewCache() *Cache {
 	opts := rueidis.ClientOption{
 		InitAddress:      []string{address},
 		AlwaysPipelining: true,
-		SelectDB:         0,
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
