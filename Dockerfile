@@ -13,9 +13,6 @@ COPY ./cmd ./cmd
 COPY ./internal ./internal
 COPY ./pkg ./pkg
 
-# Enable Go Experiments
-ENV GOEXPERIMENT arenas
-
 # Build
 RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
 

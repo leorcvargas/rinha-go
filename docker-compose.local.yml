@@ -26,18 +26,18 @@ services:
       ]
 
   cache:
-    image: eqalpha/keydb:latest
+    image: redis:latest
     hostname: cache
     ports:
       - "6379:6379"
     volumes:
-      - ./scripts/keydb/:/etc/keydb/
+      - ./scripts/redis/:/etc/redis/
+    command: ["redis-server", "/etc/redis/redis.conf"]
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          cpus: "0.15"
           memory: "0.5GB"
-    command: ["keydb-server", "/etc/keydb/keydb.conf"]
 
 volumes:
   postgres-db:

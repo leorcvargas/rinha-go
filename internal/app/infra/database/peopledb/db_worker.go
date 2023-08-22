@@ -1,7 +1,6 @@
 package peopledb
 
 import (
-	"arena"
 	"context"
 	"math/rand"
 	"time"
@@ -38,14 +37,9 @@ type Worker struct {
 	db         *pgxpool.Pool
 }
 
-type insertChannelPayload struct {
-	batch    []Job
-	batchLen int
-}
-
 func (w Worker) Start() {
 	dataCh := make(chan Job)
-	insertCh := make(chan insertChannelPayload)
+	insertCh := make(chan []Job)
 
 	go w.bootstrap(dataCh)
 
@@ -74,77 +68,34 @@ func (w Worker) bootstrap(dataCh chan Job) {
 	}
 }
 
-func (w Worker) processData(dataCh chan Job, insertCh chan insertChannelPayload) {
-	arn := arena.NewArena()
-
+func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 	batchMaxSize := 5000
-	batch := arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
-	batchCurrentIndex := 0
+	batch := make([]Job, 0, batchMaxSize)
 
-	randomTime := func(min, max int) time.Duration {
-		randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
-		amount := randomizer.Intn(max-min) + min
-
-		return time.Duration(amount) * time.Millisecond
-	}
-
-	tickInsertRateOffset := randomTime(1000, 3000)
-	tickInsertRate := randomTime(10000, 12000) + tickInsertRateOffset
+	tickInsertRateOffset := w.getRandomTickTime(1000, 5000)
+	tickInsertRate := w.getRandomTickTime(8000, 12000) + tickInsertRateOffset
 	tickInsert := time.Tick(tickInsertRate)
-
-	tickArenaClear := time.Tick(2 * time.Minute)
 
 	for {
 		select {
 		case data := <-dataCh:
-			batch[batchCurrentIndex] = data
-			batchCurrentIndex += 1
+			batch = append(batch, data)
 
 		case <-tickInsert:
-			if batchCurrentIndex > 0 {
-				log.Infof("Tick insert (len=%d)", batchCurrentIndex)
-				insertCh <- insertChannelPayload{
-					batch:    batch[:batchCurrentIndex],
-					batchLen: batchCurrentIndex,
-				}
+			batchLen := len(batch)
+			if batchLen > 0 {
+				log.Infof("Tick insert (len=%d)", batchLen)
+				insertCh <- batch
 
-				batch = arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
-				batchCurrentIndex = 0
+				batch = make([]Job, 0, batchMaxSize)
 			}
-
-		case <-tickArenaClear:
-			log.Info("Clearing arena")
-			if batchCurrentIndex > 0 {
-				insertCh <- insertChannelPayload{
-					batch:    batch[:batchCurrentIndex],
-					batchLen: batchCurrentIndex,
-				}
-			}
-
-			arn.Free()
-			arn = arena.NewArena()
-			batch = arena.MakeSlice[Job](arn, batchMaxSize, batchMaxSize)
-			batchCurrentIndex = 0
 		}
 	}
 }
 
-func (w Worker) processInsert(insertCh chan insertChannelPayload) {
+func (w Worker) processInsert(insertCh chan []Job) {
 	columns := []string{"id", "nickname", "name", "birthdate", "stack", "search"}
 	identifier := pgx.Identifier{"people"}
-
-	copyFromSlice := func(batch []Job) func(i int) ([]interface{}, error) {
-		return func(i int) ([]interface{}, error) {
-			return []interface{}{
-				batch[i].Payload.ID,
-				batch[i].Payload.Nickname,
-				batch[i].Payload.Name,
-				batch[i].Payload.Birthdate,
-				batch[i].Payload.StackStr(),
-				batch[i].Payload.SearchStr(),
-			}, nil
-		}
-	}
 
 	for {
 		select {
@@ -153,13 +104,33 @@ func (w Worker) processInsert(insertCh chan insertChannelPayload) {
 				context.Background(),
 				identifier,
 				columns,
-				pgx.CopyFromSlice(payload.batchLen, copyFromSlice(payload.batch)),
+				pgx.CopyFromSlice(len(payload), w.makeCopyFromSlice(payload)),
 			)
 
 			if err != nil {
 				log.Errorf("Error on insert batch: %v", err)
 			}
 		}
+	}
+}
+
+func (Worker) getRandomTickTime(min, max int) time.Duration {
+	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
+	amount := randomizer.Intn(max-min) + min
+
+	return time.Duration(amount) * time.Millisecond
+}
+
+func (Worker) makeCopyFromSlice(batch []Job) func(i int) ([]interface{}, error) {
+	return func(i int) ([]interface{}, error) {
+		return []interface{}{
+			batch[i].Payload.ID,
+			batch[i].Payload.Nickname,
+			batch[i].Payload.Name,
+			batch[i].Payload.Birthdate,
+			batch[i].Payload.StackStr(),
+			batch[i].Payload.SearchStr(),
+		}, nil
 	}
 }
 
