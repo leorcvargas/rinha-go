@@ -144,8 +144,7 @@ func NewCache() *Cache {
 	)
 
 	opts := rueidis.ClientOption{
-		InitAddress:       []string{address},
-		PipelineMultiplex: -1,
+		InitAddress: []string{address},
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
