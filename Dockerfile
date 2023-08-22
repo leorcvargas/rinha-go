@@ -14,7 +14,7 @@ COPY ./internal ./internal
 COPY ./pkg ./pkg
 
 # Build
-RUN CGO_ENABLED=0 go build -v -o ./bin/rinha ./cmd/rinha.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o ./bin/rinha ./cmd/rinha.go
 
 FROM alpine:3.14.10
 
