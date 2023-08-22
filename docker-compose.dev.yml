@@ -34,8 +34,6 @@ services:
     build: .
     restart: always
     hostname: api1
-    sysctls:
-      net.core.somaxconn: 4096
     environment:
       - ENABLE_SONIC_JSON=1
       - DB_HOST=db
@@ -67,8 +65,6 @@ services:
     build: .
     restart: always
     hostname: api2
-    sysctls:
-      net.core.somaxconn: 4096
     environment:
       - ENABLE_SONIC_JSON=1
       - DB_HOST=db
@@ -99,8 +95,6 @@ services:
   nginx:
     image: nginx
     hostname: api
-    sysctls:
-      net.core.somaxconn: 4096
     volumes:
       - ./scripts/nginx/:/etc/nginx/
     depends_on:
