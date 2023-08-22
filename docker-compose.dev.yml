@@ -108,20 +108,6 @@ services:
           cpus: "0.25"
           memory: "0.5GB"
 
-  # cache:
-  #   image: redis:latest
-  #   hostname: cache
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - ./scripts/redis/:/etc/redis/
-  #   command: ["redis-server", "/etc/redis/redis.conf"]
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: "0.14"
-  #         memory: "0.5GB"
-
   cache:
     image: eqalpha/keydb:latest
     hostname: cache
