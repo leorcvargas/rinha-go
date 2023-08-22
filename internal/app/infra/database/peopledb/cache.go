@@ -14,18 +14,17 @@ import (
 var ctx = context.Background()
 
 type Cache struct {
-	peopleClient   rueidis.Client
-	nicknameClient rueidis.Client
+	client rueidis.Client
 }
 
 func (p *Cache) Get(key string) (*people.Person, error) {
-	getCmd := p.peopleClient.
+	getCmd := p.client.
 		B().
 		Get().
 		Key(key).
 		Cache()
 
-	personBytes, err := p.peopleClient.DoCache(ctx, getCmd, time.Hour).AsBytes()
+	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -40,63 +39,44 @@ func (p *Cache) Get(key string) (*people.Person, error) {
 }
 
 func (p *Cache) GetNickname(nickname string) (bool, error) {
-	getNicknameCmd := p.nicknameClient.
+	getNicknameCmd := p.client.
 		B().
 		Getbit().
 		Key(nickname).
 		Offset(0).
 		Cache()
 
-	return p.nicknameClient.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
+	return p.client.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
 }
 
 func (p *Cache) Set(person *people.Person) error {
-	errorChannel := make(chan error, 2)
+	item, err := sonic.MarshalString(person)
+	if err != nil {
+		return err
+	}
 
-	go func() {
-		item, marshalError := sonic.MarshalString(person)
-		if marshalError != nil {
-			errorChannel <- marshalError
-			return
-		}
+	setPersonCmd := p.client.
+		B().
+		Set().
+		Key(person.ID).
+		Value(item).
+		Ex(15 * time.Second).
+		Build()
 
-		cmd := p.peopleClient.
-			B().
-			Set().
-			Key(person.ID).
-			Value(item).
-			Ex(15 * time.Minute).
-			Build()
+	setNicknameCmd := p.client.
+		B().
+		Setbit().
+		Key(person.Nickname).
+		Offset(0).
+		Value(1).
+		Build()
 
-		setError := p.peopleClient.Do(ctx, cmd).Error()
-		if setError != nil {
-			errorChannel <- setError
-			return
-		}
+	cmds := make(rueidis.Commands, 0, 2)
+	cmds = append(cmds, setPersonCmd)
+	cmds = append(cmds, setNicknameCmd)
 
-		errorChannel <- nil
-	}()
-
-	go func() {
-		cmd := p.nicknameClient.
-			B().
-			Setbit().
-			Key(person.Nickname).
-			Offset(0).
-			Value(1).
-			Build()
-
-		setError := p.nicknameClient.Do(ctx, cmd).Error()
-		if setError != nil {
-			errorChannel <- setError
-			return
-		}
-
-		errorChannel <- nil
-	}()
-
-	for i := 0; i < 2; i++ {
-		err := <-errorChannel
+	for _, res := range p.client.DoMulti(ctx, cmds...) {
+		err := res.Error()
 
 		if err != nil {
 			return err
@@ -118,23 +98,12 @@ func NewCache() *Cache {
 		AlwaysPipelining: true,
 		SelectDB:         0,
 	}
-	peopleClient, err := rueidis.NewClient(opts)
-	if err != nil {
-		panic(err)
-	}
-
-	opts = rueidis.ClientOption{
-		InitAddress:      []string{address},
-		AlwaysPipelining: true,
-		SelectDB:         1,
-	}
-	nicknameClient, err := rueidis.NewClient(opts)
+	client, err := rueidis.NewClient(opts)
 	if err != nil {
 		panic(err)
 	}
 
 	return &Cache{
-		peopleClient:   peopleClient,
-		nicknameClient: nicknameClient,
+		client: client,
 	}
 }
