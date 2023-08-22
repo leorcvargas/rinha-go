@@ -25,7 +25,7 @@ COPY --from=builder /app/bin/rinha .
 
 # Increase GC percentage and limit the number of OS threads
 ENV GOGC 1000
-ENV GOMAXPROCS 2
+ENV GOMAXPROCS 1
 
 # Run binary
 CMD ["/rinha"]
