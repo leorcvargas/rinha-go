@@ -33,6 +33,8 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 			log.Fatalln("Unable to parse connection url:", err)
 		}
 
+		poolConfig.MinConns = 5
+
 		db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 		if err != nil {
 			log.Fatalln("Unable to create connection pool:", err)
