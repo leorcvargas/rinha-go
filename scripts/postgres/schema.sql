@@ -1,7 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
-SET pg_trgm.similarity_threshold = 0.08;
-
 CREATE TABLE
     IF NOT EXISTS public.people (
         id uuid PRIMARY KEY NOT NULL,
