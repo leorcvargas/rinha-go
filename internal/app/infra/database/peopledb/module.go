@@ -6,8 +6,7 @@ import (
 )
 
 var Module = fx.Provide(
-	NewPeopleDbCache,
-	NewMem,
+	NewCache,
 	NewDispatcher,
 	NewJobQueue,
 	fx.Annotate(

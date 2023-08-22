@@ -2,6 +2,8 @@ package peopledb
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -11,15 +13,11 @@ import (
 
 var ctx = context.Background()
 
-type PeopleDbCache struct {
+type Cache struct {
 	client rueidis.Client
 }
 
-func (p *PeopleDbCache) Cache() rueidis.Client {
-	return p.client
-}
-
-func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
+func (p *Cache) Get(key string) (*people.Person, error) {
 	getCmd := p.client.
 		B().
 		Get().
@@ -40,7 +38,7 @@ func (p *PeopleDbCache) Get(key string) (*people.Person, error) {
 	return &person, nil
 }
 
-func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
+func (p *Cache) GetNickname(nickname string) (bool, error) {
 	getNicknameCmd := p.client.
 		B().
 		Getbit().
@@ -51,10 +49,10 @@ func (p *PeopleDbCache) GetNickname(nickname string) (bool, error) {
 	return p.client.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
 }
 
-func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, error) {
+func (p *Cache) Set(person *people.Person) error {
 	item, err := sonic.MarshalString(person)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	setPersonCmd := p.client.
@@ -62,7 +60,7 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 		Set().
 		Key("person:" + person.ID).
 		Value(item).
-		Ex(time.Hour).
+		Ex(time.Minute).
 		Build()
 
 	setNicknameCmd := p.client.
@@ -81,23 +79,73 @@ func (p *PeopleDbCache) Set(key string, person *people.Person) (*people.Person, 
 		err := res.Error()
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return person, nil
+	return nil
 }
 
-func NewPeopleDbCache() *PeopleDbCache {
+func (p *Cache) SetSearch(term string, result []people.Person) error {
+	item, err := sonic.MarshalString(result)
+	if err != nil {
+		return err
+	}
+
+	setSearchCmd := p.client.
+		B().
+		Set().
+		Key("search:" + term).
+		Value(item).
+		Ex(1.5 * 60000 * time.Millisecond).
+		Build()
+
+	return p.client.Do(ctx, setSearchCmd).Error()
+}
+
+func (p *Cache) GetSearch(term string) ([]people.Person, error) {
+	getSearchCmd := p.client.
+		B().
+		Get().
+		Key("search:" + term).
+		Cache()
+
+	resultBytes, err := p.client.
+		DoCache(
+			ctx,
+			getSearchCmd,
+			1.5*60000*time.Millisecond,
+		).
+		AsBytes()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []people.Person
+	err = sonic.Unmarshal(resultBytes, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func NewCache() *Cache {
+	address := fmt.Sprintf(
+		"%s:%s",
+		os.Getenv("CACHE_HOST"),
+		os.Getenv("CACHE_PORT"),
+	)
+
 	opts := rueidis.ClientOption{
-		InitAddress: []string{"cache:6379"},
+		InitAddress:      []string{address},
+		AlwaysPipelining: true,
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
 		panic(err)
 	}
 
-	return &PeopleDbCache{
-		client: client,
-	}
+	return &Cache{client: client}
 }

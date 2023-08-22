@@ -14,25 +14,19 @@ import (
 
 type PersonRepository struct {
 	db       *pgxpool.Pool
-	cache    *PeopleDbCache
+	cache    *Cache
 	jobQueue JobQueue
 }
 
-func (p *PersonRepository) Create(person *people.Person) (*people.Person, error) {
-	nicknameTaken, err := p.cache.GetNickname(person.Nickname)
-	if err != nil {
-		return nil, err
-	}
-
-	if nicknameTaken {
-		return nil, people.ErrNicknameTaken
+func (p *PersonRepository) Create(person *people.Person) error {
+	if err := p.cache.Set(person); err != nil {
+		log.Errorf("Error setting person in cache: %v", err)
+		return err
 	}
 
 	p.jobQueue <- Job{Payload: person}
 
-	p.cache.Set(person.ID, person)
-
-	return person, nil
+	return nil
 }
 
 func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
@@ -79,21 +73,44 @@ func (p *PersonRepository) FindByID(id string) (*people.Person, error) {
 }
 
 func (p *PersonRepository) Search(term string) ([]people.Person, error) {
-	return p.searchTrigram(term)
-}
+	sanitizedTerm := strings.ToLower(term)
 
-func (p *PersonRepository) searchTrigram(term string) ([]people.Person, error) {
+	cachedResult, err := p.cache.GetSearch(sanitizedTerm)
+	if err != nil && !rueidis.IsRedisNil(err) {
+		log.Errorf("Error getting search from cache: %v", err)
+		return nil, err
+	}
+
+	if len(cachedResult) > 0 {
+		log.Infof("Returning cached search result for term: %s", sanitizedTerm)
+		return cachedResult, nil
+	}
+
 	rows, err := p.db.Query(
 		context.Background(),
 		SearchPeopleTrgmQuery,
-		strings.ToLower(term),
+		sanitizedTerm,
 	)
 	if err != nil {
 		log.Errorf("Error executing trigram search: %v", err)
 		return nil, err
 	}
+	defer rows.Close()
 
-	return mapSearchResult(rows)
+	result, err := p.mapSearchResult(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) > 0 {
+		go func() {
+			if err := p.cache.SetSearch(sanitizedTerm, result); err != nil {
+				log.Errorf("Error setting search result in cache: %v", err)
+			}
+		}()
+	}
+
+	return result, nil
 }
 
 func (p *PersonRepository) CountAll() (int64, error) {
@@ -114,7 +131,16 @@ func (p *PersonRepository) CountAll() (int64, error) {
 	return total, nil
 }
 
-func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
+func (p *PersonRepository) CheckNicknameExists(nickname string) (bool, error) {
+	nicknameTaken, err := p.cache.GetNickname(nickname)
+	if err != nil {
+		return false, err
+	}
+
+	return nicknameTaken, nil
+}
+
+func (p *PersonRepository) mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	result := make([]people.Person, 0)
 	for rows.Next() {
 		var person people.Person
@@ -142,7 +168,7 @@ func mapSearchResult(rows pgx.Rows) ([]people.Person, error) {
 	return result, nil
 }
 
-func NewPersonRepository(db *pgxpool.Pool, cache *PeopleDbCache, jobQueue JobQueue) people.Repository {
+func NewPersonRepository(db *pgxpool.Pool, cache *Cache, jobQueue JobQueue) people.Repository {
 	return &PersonRepository{
 		db:       db,
 		cache:    cache,

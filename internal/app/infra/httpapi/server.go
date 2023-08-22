@@ -2,57 +2,73 @@ package httpapi
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"runtime/pprof"
+	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/leorcvargas/rinha-2023-q3/internal/app/infra/config"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 )
 
-func prof() func() {
-	f, err := os.Create(os.Getenv("CPU_PROFILE"))
+func startProfiling(config *config.Config) {
+	log.Infof(
+		"Starting CPU and Memory profiling on %s and %s",
+		config.Profiling.CPU,
+		config.Profiling.Mem,
+	)
+
+	cpuProfFile, err := os.Create(config.Profiling.CPU)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pprof.StartCPUProfile(f)
+	pprof.StartCPUProfile(cpuProfFile)
 
-	mf, err := os.Create(os.Getenv("MEM_PROFILE"))
+	memoryProfFile, err := os.Create(config.Profiling.Mem)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pprof.WriteHeapProfile(mf)
+	pprof.WriteHeapProfile(memoryProfFile)
 
-	return func() {
+	after := time.After(3 * time.Minute)
+
+	go func() {
+		<-after
+		log.Info("Stopping CPU and Memory profiling")
 		pprof.StopCPUProfile()
-		f.Close()
-		mf.Close()
-	}
+		cpuProfFile.Close()
+		memoryProfFile.Close()
+	}()
 }
 
-func NewServer(lifecycle fx.Lifecycle, router *fiber.App, _ *pgxpool.Pool) *fasthttp.Server {
-	// Uncomment if profiling is needed
-	// var shutdown func()
-
+func NewServer(
+	lifecycle fx.Lifecycle,
+	router *fiber.App,
+	config *config.Config,
+	_ *pgxpool.Pool,
+) *fasthttp.Server {
 	lifecycle.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
-				// Uncomment if profiling is needed
-				// shutdown = prof()
-
 				log.Info("Starting the server...")
-				if err := router.Listen(":8080"); err != nil {
+
+				if config.Profiling.Enabled {
+					startProfiling(config)
+				}
+
+				addr := fmt.Sprintf(":%s", config.Server.Port)
+				if err := router.Listen(addr); err != nil {
 					log.Fatalf("Error starting the server: %s\n", err)
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			// Uncomment if profiling is needed
-			// defer shutdown()
 			log.Info("Stopping the server...")
 
 			return router.ShutdownWithContext(ctx)

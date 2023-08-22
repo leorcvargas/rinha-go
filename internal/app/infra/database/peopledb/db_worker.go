@@ -2,14 +2,17 @@ package peopledb
 
 import (
 	"context"
-	"strings"
+	"math/rand"
+	"time"
 
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leorcvargas/rinha-2023-q3/internal/app/domain/people"
 )
 
 var (
-	MaxWorker = 2
+	MaxWorker = 1
 	MaxQueue  = 1
 )
 
@@ -34,6 +37,104 @@ type Worker struct {
 	db         *pgxpool.Pool
 }
 
+func (w Worker) Start() {
+	dataCh := make(chan Job)
+	insertCh := make(chan []Job)
+
+	go w.bootstrap(dataCh)
+
+	go w.processData(dataCh, insertCh)
+
+	go w.processInsert(insertCh)
+}
+
+func (w Worker) Stop() {
+	go func() {
+		w.quit <- true
+	}()
+}
+
+func (w Worker) bootstrap(dataCh chan Job) {
+	for {
+		w.WorkerPool <- w.JobChannel
+
+		select {
+		case job := <-w.JobChannel:
+			dataCh <- job
+
+		case <-w.quit:
+			return
+		}
+	}
+}
+
+func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
+	// tickInsertRateOffset := w.getRandomTickTime(1000, 3000)
+	// tickInsertRate := time.Duration(10000*time.Millisecond) + tickInsertRateOffset
+	tickInsertRate := time.Duration(10 * time.Second)
+	tickInsert := time.Tick(tickInsertRate)
+
+	batchMaxSize := 10000
+	batch := make([]Job, 0, batchMaxSize)
+
+	for {
+		select {
+		case data := <-dataCh:
+			batch = append(batch, data)
+
+		case <-tickInsert:
+			batchLen := len(batch)
+			if batchLen > 0 {
+				log.Infof("Tick insert (len=%d)", batchLen)
+				insertCh <- batch
+
+				batch = make([]Job, 0, batchMaxSize)
+			}
+		}
+	}
+}
+
+func (w Worker) processInsert(insertCh chan []Job) {
+	columns := []string{"id", "nickname", "name", "birthdate", "stack", "search"}
+	identifier := pgx.Identifier{"people"}
+
+	for {
+		select {
+		case payload := <-insertCh:
+			_, err := w.db.CopyFrom(
+				context.Background(),
+				identifier,
+				columns,
+				pgx.CopyFromSlice(len(payload), w.makeCopyFromSlice(payload)),
+			)
+
+			if err != nil {
+				log.Errorf("Error on insert batch: %v", err)
+			}
+		}
+	}
+}
+
+func (Worker) getRandomTickTime(min, max int) time.Duration {
+	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
+	amount := randomizer.Intn(max-min) + min
+
+	return time.Duration(amount) * time.Millisecond
+}
+
+func (Worker) makeCopyFromSlice(batch []Job) func(i int) ([]interface{}, error) {
+	return func(i int) ([]interface{}, error) {
+		return []interface{}{
+			batch[i].Payload.ID,
+			batch[i].Payload.Nickname,
+			batch[i].Payload.Name,
+			batch[i].Payload.Birthdate,
+			batch[i].Payload.StackStr(),
+			batch[i].Payload.SearchStr(),
+		}, nil
+	}
+}
+
 func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 	return Worker{
 		WorkerPool: workerPool,
@@ -41,42 +142,6 @@ func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 		quit:       make(chan bool),
 		db:         db,
 	}
-}
-
-// Start method starts the run loop for the worker, listening for a quit channel in
-// case we need to stop it
-func (w Worker) Start() {
-	go func() {
-		for {
-			// register the current worker into the worker queue.
-			w.WorkerPool <- w.JobChannel
-
-			select {
-			case job := <-w.JobChannel:
-				w.db.Exec(
-					context.Background(),
-					InsertPersonQuery,
-					job.Payload.ID,
-					job.Payload.Nickname,
-					job.Payload.Name,
-					job.Payload.Birthdate,
-					job.Payload.StackString(),
-					strings.ToLower(job.Payload.Nickname+" "+job.Payload.Name+" "+job.Payload.StackString()),
-				)
-
-			case <-w.quit:
-				// we have received a signal to stop
-				return
-			}
-		}
-	}()
-}
-
-// Stop signals the worker to stop listening for work requests.
-func (w Worker) Stop() {
-	go func() {
-		w.quit <- true
-	}()
 }
 
 type Dispatcher struct {

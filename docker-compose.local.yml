@@ -1,0 +1,47 @@
+version: "3.5"
+services:
+  db:
+    image: postgres:15
+    hostname: db
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: rinha
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+      - ./scripts/postgres/:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 15s
+      timeout: 25s
+    command:
+      [
+        "postgres",
+        "-c",
+        "config_file=/docker-entrypoint-initdb.d/postgresql.conf",
+      ]
+
+  cache:
+    image: redis:latest
+    hostname: cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./scripts/redis/:/etc/redis/
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "0.5GB"
+
+volumes:
+  postgres-db:
+
+networks:
+  default:
+    driver: bridge

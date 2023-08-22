@@ -2,7 +2,7 @@ dev:
 	go run ./cmd/rinha.go
 
 build: clean deps
-	go build -o ./bin/rinha ./cmd/rinha.go
+	CGO_ENABLED=0 go build -pgo=./cmd/cpu.pprof -v -o ./bin/rinha ./cmd/rinha.go
 
 deps:
 	go mod tidy
@@ -17,7 +17,10 @@ docker-push:
 	docker buildx build --push --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --tag leorcvargas/rinha-go .
 
 docker-down:
-	docker compose -f docker-compose.dev.yml down -v --remove-orphans
+	docker compose down -v --remove-orphans
 
-docker-up: docker-down
+docker-dev: docker-down
 	docker compose -f docker-compose.dev.yml up --build
+
+docker-local: docker-down
+	docker compose -f docker-compose.local.yml up --build -d

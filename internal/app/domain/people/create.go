@@ -4,15 +4,19 @@ type CreatePerson struct {
 	repository Repository
 }
 
-func (c *CreatePerson) Execute(
-	Nickname string,
-	Name string,
-	Birthdate string,
-	Stack []string,
-) (*Person, error) {
-	person := NewPerson(Nickname, Name, Birthdate, Stack)
+func (c *CreatePerson) Execute(nickname string, name string, birthdate string, stack []string) (*Person, error) {
+	nicknameTaken, err := c.repository.CheckNicknameExists(nickname)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err := c.repository.Create(person)
+	if nicknameTaken {
+		return nil, ErrNicknameTaken
+	}
+
+	person := NewPerson(nickname, name, birthdate, stack)
+
+	err = c.repository.Create(person)
 	if err != nil {
 		return nil, err
 	}
