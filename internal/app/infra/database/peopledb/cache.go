@@ -22,9 +22,9 @@ func (p *Cache) Get(key string) (*people.Person, error) {
 		B().
 		Get().
 		Key("person:" + key).
-		Cache()
+		Build()
 
-	personBytes, err := p.client.DoCache(ctx, getCmd, time.Hour).AsBytes()
+	personBytes, err := p.client.Do(ctx, getCmd).AsBytes()
 	if err != nil {
 		return nil, err
 	}
@@ -44,9 +44,9 @@ func (p *Cache) GetNickname(nickname string) (bool, error) {
 		Getbit().
 		Key("nickname:" + nickname).
 		Offset(0).
-		Cache()
+		Build()
 
-	return p.client.DoCache(ctx, getNicknameCmd, time.Hour).AsBool()
+	return p.client.Do(ctx, getNicknameCmd).AsBool()
 }
 
 func (p *Cache) Set(person *people.Person) error {
@@ -108,13 +108,12 @@ func (p *Cache) GetSearch(term string) ([]people.Person, error) {
 		B().
 		Get().
 		Key("search:" + term).
-		Cache()
+		Build()
 
 	resultBytes, err := p.client.
-		DoCache(
+		Do(
 			ctx,
 			getSearchCmd,
-			1.5*60000*time.Millisecond,
 		).
 		AsBytes()
 
@@ -139,10 +138,10 @@ func NewCache() *Cache {
 	)
 
 	opts := rueidis.ClientOption{
-		InitAddress:       []string{address},
-		AlwaysPipelining:  true,
-		CacheSizeEachConn: 256 * (1 << 20),
-		PipelineMultiplex: 8,
+		InitAddress: []string{address},
+		// AlwaysPipelining: true,
+		// CacheSizeEachConn: 256 * (1 << 20),
+		// PipelineMultiplex: 8,
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
