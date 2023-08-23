@@ -69,8 +69,6 @@ func (w Worker) bootstrap(dataCh chan Job) {
 }
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
-	// tickInsertRateOffset := w.getRandomTickTime(1000, 3000)
-	// tickInsertRate := time.Duration(10000*time.Millisecond) + tickInsertRateOffset
 	tickInsertRate := time.Duration(10 * time.Second)
 	tickInsert := time.Tick(tickInsertRate)
 
@@ -101,7 +99,13 @@ func (w Worker) processInsert(insertCh chan []Job) {
 	for {
 		select {
 		case payload := <-insertCh:
-			_, err := w.db.CopyFrom(
+			conn, err := w.db.Acquire(ctx)
+			if err != nil {
+				log.Errorf("Error on acquire connection: %v", err)
+				continue
+			}
+
+			_, err = conn.CopyFrom(
 				context.Background(),
 				identifier,
 				columns,
@@ -111,6 +115,8 @@ func (w Worker) processInsert(insertCh chan []Job) {
 			if err != nil {
 				log.Errorf("Error on insert batch: %v", err)
 			}
+
+			conn.Release()
 		}
 	}
 }
