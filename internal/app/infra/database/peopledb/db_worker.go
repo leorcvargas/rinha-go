@@ -99,13 +99,7 @@ func (w Worker) processInsert(insertCh chan []Job) {
 	for {
 		select {
 		case payload := <-insertCh:
-			conn, err := w.db.Acquire(ctx)
-			if err != nil {
-				log.Errorf("Error on acquire connection: %v", err)
-				continue
-			}
-
-			_, err = conn.CopyFrom(
+			_, err := w.db.CopyFrom(
 				context.Background(),
 				identifier,
 				columns,
@@ -115,8 +109,6 @@ func (w Worker) processInsert(insertCh chan []Job) {
 			if err != nil {
 				log.Errorf("Error on insert batch: %v", err)
 			}
-
-			conn.Release()
 		}
 	}
 }
