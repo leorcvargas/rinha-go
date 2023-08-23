@@ -15,7 +15,7 @@ services:
       resources:
         limits:
           cpus: "0.7"
-          memory: "1GB"
+          memory: "1.25GB"
     volumes:
       - postgres-rinha-go-db:/var/lib/postgresql/data
       - ./scripts/postgres/init/:/docker-entrypoint-initdb.d/
@@ -127,7 +127,7 @@ services:
       resources:
         limits:
           cpus: "0.15"
-          memory: "0.5GB"
+          memory: "0.25GB"
     volumes:
       - ./scripts/keydb/:/etc/keydb/
     command: ["keydb-server", "/etc/keydb/keydb.conf"]
