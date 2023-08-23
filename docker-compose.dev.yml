@@ -104,33 +104,33 @@ services:
           cpus: "0.25"
           memory: "0.5GB"
 
-  # cache:
-  #   image: redis:latest
-  #   hostname: cache
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - ./scripts/redis/:/etc/redis/
-  #   command: ["redis-server", "/etc/redis/redis.conf"]
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: "0.15"
-  #         memory: "0.5GB"
-
   cache:
-    image: eqalpha/keydb:latest
+    image: redis:latest
     hostname: cache
     ports:
       - "6379:6379"
+    volumes:
+      - ./scripts/redis/:/etc/redis/
+    command: ["redis-server", "/etc/redis/redis.conf"]
     deploy:
       resources:
         limits:
           cpus: "0.15"
           memory: "0.25GB"
-    volumes:
-      - ./scripts/keydb/:/etc/keydb/
-    command: ["keydb-server", "/etc/keydb/keydb.conf"]
+
+  # cache:
+  #   image: eqalpha/keydb:latest
+  #   hostname: cache
+  #   ports:
+  #     - "6379:6379"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.15"
+  #         memory: "0.25GB"
+  #   volumes:
+  #     - ./scripts/keydb/:/etc/keydb/
+  #   command: ["keydb-server", "/etc/keydb/keydb.conf"]
 
 volumes:
   postgres-rinha-go-db:
