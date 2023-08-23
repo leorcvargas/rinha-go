@@ -120,7 +120,7 @@ services:
           memory: "0.5GB"
     volumes:
       - ./scripts/keydb/:/etc/keydb/
-    command: ["keydb-server", "/etc/keydb/keydb.conf"]
+    command: ["keydb-server", "/etc/keydb/keydb.conf", '--save ""']
 
 volumes:
   postgres-db:
