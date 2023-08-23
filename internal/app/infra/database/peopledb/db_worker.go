@@ -69,8 +69,6 @@ func (w Worker) bootstrap(dataCh chan Job) {
 }
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
-	// tickInsertRateOffset := w.getRandomTickTime(1000, 3000)
-	// tickInsertRate := time.Duration(10000*time.Millisecond) + tickInsertRateOffset
 	tickInsertRate := time.Duration(10 * time.Second)
 	tickInsert := time.Tick(tickInsertRate)
 
