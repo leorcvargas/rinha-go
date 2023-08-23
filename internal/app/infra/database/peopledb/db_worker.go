@@ -23,13 +23,10 @@ type Job struct {
 	Payload *people.Person
 }
 
-// A buffered channel that we can send work requests on.
-
 func NewJobQueue() JobQueue {
 	return make(JobQueue, MaxQueue)
 }
 
-// Worker represents the worker that executes the job
 type Worker struct {
 	WorkerPool chan chan Job
 	JobChannel chan Job
