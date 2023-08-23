@@ -142,7 +142,7 @@ func NewCache() *Cache {
 		InitAddress:       []string{address},
 		AlwaysPipelining:  true,
 		CacheSizeEachConn: 256 * (1 << 20),
-		PipelineMultiplex: 100,
+		PipelineMultiplex: 8,
 	}
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
