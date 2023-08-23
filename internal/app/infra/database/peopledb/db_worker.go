@@ -69,9 +69,7 @@ func (w Worker) bootstrap(dataCh chan Job) {
 }
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
-	// tickInsertRateOffset := w.getRandomTickTime(1000, 3000)
-	// tickInsertRate := time.Duration(10000*time.Millisecond) + tickInsertRateOffset
-	tickInsertRate := time.Duration(10 * time.Second)
+	tickInsertRate := time.Duration(4 * time.Second)
 	tickInsert := time.Tick(tickInsertRate)
 
 	batchMaxSize := 10000
@@ -146,7 +144,6 @@ func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 
 type Dispatcher struct {
 	maxWorkers int
-	// A pool of workers channels that are registered with the dispatcher
 	WorkerPool chan chan Job
 	jobQueue   chan Job
 	db         *pgxpool.Pool
@@ -166,7 +163,6 @@ func NewDispatcher(db *pgxpool.Pool, jobQueue JobQueue) *Dispatcher {
 }
 
 func (d *Dispatcher) Run() {
-	// starting n number of workers
 	for i := 0; i < d.maxWorkers; i++ {
 		worker := NewWorker(d.WorkerPool, d.db)
 		worker.Start()
@@ -179,13 +175,8 @@ func (d *Dispatcher) dispatch() {
 	for {
 		select {
 		case job := <-d.jobQueue:
-			// a job request has been received
 			go func(job Job) {
-				// try to obtain a worker job channel that is available.
-				// this will block until a worker is idle
 				jobChannel := <-d.WorkerPool
-
-				// dispatch the job to the worker job channel
 				jobChannel <- job
 			}(job)
 		}
