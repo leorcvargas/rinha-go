@@ -46,7 +46,7 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 
 		// warmup
 		var ids []string
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 3; i++ {
 			person := people.NewPerson(
 				fmt.Sprintf("nickname-%d", i),
 				fmt.Sprintf("name-%d", i),
