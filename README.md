@@ -19,5 +19,5 @@ Repositório da competição [aqui](https://github.com/zanfranceschi/rinha-de-ba
 - Nginx
 
 ## Minhas redes
-- [Twitter](https://twitter.com/h4nkb31f0ng)
+- [Twitter](https://twitter.com/leorcvargas)
 - [LinkedIn](https://www.linkedin.com/in/leonardo-vargas-6a2216116/)
