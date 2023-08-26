@@ -14,7 +14,7 @@ Repositório da competição [aqui](https://github.com/zanfranceschi/rinha-de-ba
 - pgx (SQL Driver)
 - Fx (DI framework)
 - Rueidis (Redis client)
-- KeyDB (Redis fork)
+- Redis
 - Postgres
 - Nginx
 
